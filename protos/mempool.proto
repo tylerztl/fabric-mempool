@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_package = "org.fabric-mempool.protos";
+option go_package = "github.com/tylerztl/fabric-mempool/protos";
+
+package protos;
+
+enum StatusCode {
+    SUCCESS = 0;
+    FAILED = 1;
+}
+
+message SubmitResponse {
+    StatusCode status = 1;
+}
+
+message EndorsedTransaction {
+    bytes tx = 1;
+}
+
+service Mempool {
+    rpc SubmitTransaction (EndorsedTransaction) returns (SubmitResponse) {}
+}

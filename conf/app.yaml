@@ -1,0 +1,17 @@
+---
+
+application:
+  logPath: logs
+  logLevel: 7
+  local: true
+  clients: 1
+  cpus: 2
+  orderers:
+    - name: orderer
+      host: orderer.example.com
+      port: 7050
+  ordererMsp: OrdererMSP
+  channels:
+    - mychannel
+  tlsEnabled: true
+  reqTimeout: 120

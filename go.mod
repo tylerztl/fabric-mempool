@@ -1,0 +1,29 @@
+module github.com/tylerztl/fabric-mempool
+
+go 1.14
+
+require (
+	github.com/Shopify/sarama v1.27.2 // indirect
+	github.com/astaxie/beego v1.12.3
+	github.com/fortytw2/leaktest v1.3.0
+	github.com/go-kit/kit v0.10.0
+	github.com/gogo/protobuf v1.3.1
+	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/hashicorp/go-version v1.2.1 // indirect
+	github.com/hyperledger/fabric v1.4.10-0.20201209223044-51a3a52260f6
+	github.com/hyperledger/fabric-amcl v0.0.0-20200424173818-327c9e2cf77a // indirect
+	github.com/miekg/pkcs11 v1.0.3 // indirect
+	github.com/mitchellh/mapstructure v1.4.0 // indirect
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.8.0
+	github.com/spf13/cobra v1.1.1
+	github.com/stretchr/testify v1.6.1
+	github.com/sykesm/zap-logfmt v0.0.4 // indirect
+	github.com/tendermint/tendermint v0.34.1
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/zap v1.16.0 // indirect
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	google.golang.org/grpc v1.34.0
+	google.golang.org/protobuf v1.25.0
+	gopkg.in/yaml.v2 v2.4.0
+)
