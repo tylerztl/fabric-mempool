@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tylerztl/fabric-mempool/mempool"
 	pb "github.com/tylerztl/fabric-mempool/protos"
 )
@@ -39,7 +38,7 @@ func NewHandler() *Handler {
 	cfg.RootDir = rootDir
 
 	pool := mempool.NewCListMempool(cfg, 0)
-	pool.SetLogger(log.TestingLogger())
+	pool.SetLogger(logger)
 
 	return &Handler{
 		fetcher: NewTxsFetcher(),

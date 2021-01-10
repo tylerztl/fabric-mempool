@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tylerztl/fabric-mempool/handler"
-	"github.com/tylerztl/fabric-mempool/helpers"
 	pb "github.com/tylerztl/fabric-mempool/protos"
 	"google.golang.org/grpc"
 )
+
+var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 var rootCmd = &cobra.Command{
 	Use:   "grpc",
@@ -21,14 +22,10 @@ var serverCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Run the gRPC fabric-sdk server",
 	Run: func(cmd *cobra.Command, args []string) {
-		defer func() {
-			if err := recover(); err != nil {
-				fmt.Printf("Recover error : %v", err)
-			}
-		}()
-
 		err := Run()
-		fmt.Printf("server run error : %v", err)
+		if err != nil {
+			panic(err)
+		}
 	},
 }
 
@@ -39,8 +36,6 @@ func init() {
 }
 
 func main() {
-	handler.NewHandler()
-
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
@@ -51,9 +46,7 @@ var (
 	EndPoint   string
 )
 
-var logger = helpers.GetLogger()
-
-func Run() (err error) {
+func Run() error {
 	EndPoint = ":" + ServerPort
 	conn, err := net.Listen("tcp", EndPoint)
 	if err != nil {
@@ -61,12 +54,11 @@ func Run() (err error) {
 	}
 
 	srv := newGrpc()
-	logger.Info("gRPC and https listen on: %s", ServerPort)
+	logger.Info("Fabric mempool service running", "listenPort", ServerPort)
 
 	if err = srv.Serve(conn); err != nil {
 		logger.Error("ListenAndServe: %s", err)
 	}
-
 	return err
 }
 

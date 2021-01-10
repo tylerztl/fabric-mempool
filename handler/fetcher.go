@@ -15,7 +15,8 @@ import (
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"github.com/pkg/errors"
-	"github.com/tylerztl/fabric-mempool/helpers"
+	"github.com/tendermint/tendermint/libs/log"
+	"github.com/tylerztl/fabric-mempool/conf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -23,20 +24,20 @@ import (
 var (
 	MaxGrpcMsgSize = 1000 * 1024 * 1024
 	ConnTimeout    = 30 * time.Second
-	Logger         = helpers.GetLogger()
-	AppConf        = helpers.GetAppConf().Conf
+	AppConf        = conf.GetAppConf().Conf
+	logger         = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "fetcher")
 )
 
 type TxsFetcher struct {
 	ordConf *localconfig.TopLevel
 
-	clients map[string][][]*BroadcastClient // channels~orderers~clients
+	clients map[string][]*BroadcastClient // channels~orderers
 }
 
 func NewTxsFetcher() *TxsFetcher {
 	runtime.GOMAXPROCS(AppConf.CPUs)
 
-	_ = os.Setenv("FABRIC_CFG_PATH", helpers.GetSampleConfigPath())
+	_ = os.Setenv("FABRIC_CFG_PATH", conf.GetSampleConfigPath())
 	defer func() {
 		_ = os.Unsetenv("FABRIC_CFG_PATH")
 	}()
@@ -51,7 +52,7 @@ func NewTxsFetcher() *TxsFetcher {
 	if len(AppConf.ConnOrderers) == 0 {
 		panic(" Cannot find connect orderers config")
 	}
-	fpath := helpers.GetCryptoConfigPath(fmt.Sprintf("ordererOrganizations/example.com/orderers/%s"+"*", AppConf.ConnOrderers[0].Host))
+	fpath := conf.GetCryptoConfigPath(fmt.Sprintf("ordererOrganizations/example.com/orderers/%s"+"*", AppConf.ConnOrderers[0].Host))
 	matches, err := filepath.Glob(fpath)
 	if err != nil {
 		panic(fmt.Sprintf("Cannot find filepath %s ; err: %v\n", fpath, err))
@@ -76,14 +77,10 @@ func NewTxsFetcher() *TxsFetcher {
 	return engine
 }
 
-func getOrderers() (channelClients map[string][][]*BroadcastClient) {
-	if AppConf.Clients < 1 {
-		panic("Invalid parameter for clients number!")
-	}
-
-	channelClients = make(map[string][][]*BroadcastClient)
+func getOrderers() (channelClients map[string][]*BroadcastClient) {
+	channelClients = make(map[string][]*BroadcastClient)
 	for _, channel := range AppConf.Channels {
-		ordererClients := make([][]*BroadcastClient, len(AppConf.ConnOrderers))
+		ordererClients := make([]*BroadcastClient, len(AppConf.ConnOrderers))
 		for i, orderer := range AppConf.ConnOrderers {
 			var serverAddr string
 			if AppConf.Local {
@@ -92,48 +89,45 @@ func getOrderers() (channelClients map[string][][]*BroadcastClient) {
 				serverAddr = fmt.Sprintf("%s:%d", orderer.Host, orderer.Port)
 			}
 
-			fpath := helpers.GetCryptoConfigPath(fmt.Sprintf("ordererOrganizations/example.com/orderers/%s"+"*", orderer.Host))
+			fpath := conf.GetCryptoConfigPath(fmt.Sprintf("ordererOrganizations/example.com/orderers/%s"+"*", orderer.Host))
 			matches, err := filepath.Glob(fpath)
 			if err != nil {
 				panic(fmt.Sprintf("Cannot find filepath %s ; err: %v\n", fpath, err))
 			} else if len(matches) != 1 {
 				panic(fmt.Sprintf("No msp directory filepath name matches: %s\n", fpath))
 			}
-			clients := make([]*BroadcastClient, AppConf.Clients)
-			for i := uint32(0); i < AppConf.Clients; i++ {
-				var dialOpts []grpc.DialOption
-				dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(MaxGrpcMsgSize),
-					grpc.MaxCallRecvMsgSize(MaxGrpcMsgSize)))
-				if AppConf.TlsEnabled {
-					creds, err := credentials.NewClientTLSFromFile(fmt.Sprintf("%s/tls/ca.crt", matches[0]), orderer.Host)
-					if err != nil {
-						panic(fmt.Sprintf("Error creating grpc tls client creds, serverAddr %s, err: %v", serverAddr, err))
-					}
-					dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
-				} else {
-					dialOpts = append(dialOpts, grpc.WithInsecure())
-				}
 
-				ctx, _ := context.WithTimeout(context.Background(), ConnTimeout)
-				//defer cancel()
-
-				ordererConn, err := grpc.DialContext(ctx, serverAddr, dialOpts...)
+			var dialOpts []grpc.DialOption
+			dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(MaxGrpcMsgSize),
+				grpc.MaxCallRecvMsgSize(MaxGrpcMsgSize)))
+			if AppConf.TlsEnabled {
+				creds, err := credentials.NewClientTLSFromFile(fmt.Sprintf("%s/tls/ca.crt", matches[0]), orderer.Host)
 				if err != nil {
-					panic(fmt.Sprintf("Error connecting (grpc) to %s, err: %v", serverAddr, err))
+					panic(fmt.Sprintf("Error creating grpc tls client creds, serverAddr %s, err: %v", serverAddr, err))
 				}
-
-				client, err := ab.NewAtomicBroadcastClient(ordererConn).Broadcast(context.TODO())
-				if err != nil {
-					panic(fmt.Sprintf("Error creating broadcast client for orderer[%s] , err: %v", serverAddr, err))
-				}
-
-				clients[i] = &BroadcastClient{
-					client: client,
-				}
-
-				Logger.Info("Starting Producer client [%d] for orderer [%s] channel [%s], %v", i, serverAddr, channel, time.Now())
+				dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+			} else {
+				dialOpts = append(dialOpts, grpc.WithInsecure())
 			}
-			ordererClients[i] = clients
+
+			ctx, _ := context.WithTimeout(context.Background(), ConnTimeout)
+			//defer cancel()
+
+			ordererConn, err := grpc.DialContext(ctx, serverAddr, dialOpts...)
+			if err != nil {
+				panic(fmt.Sprintf("Error connecting (grpc) to %s, err: %v", serverAddr, err))
+			}
+
+			client, err := ab.NewAtomicBroadcastClient(ordererConn).Broadcast(context.TODO())
+			if err != nil {
+				panic(fmt.Sprintf("Error creating broadcast client for orderer[%s] , err: %v", serverAddr, err))
+			}
+
+			logger.Info("Connected orderer service", "ordererAddr", serverAddr, "channel", channel)
+
+			ordererClients[i] = &BroadcastClient{
+				client: client,
+			}
 		}
 		channelClients[channel] = ordererClients
 	}

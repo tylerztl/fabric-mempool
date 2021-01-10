@@ -1,25 +1,26 @@
-package helpers
+package conf
 
 import (
 	"fmt"
+	"go/build"
 	"io/ioutil"
+	"path"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
+
+const Project = "github.com/tylerztl/fabric-mempool"
 
 type AppConf struct {
 	Conf Application `yaml:"application"`
 }
 
 type Application struct {
-	LogPath      string         `yaml:"logPath"`
-	LogLevel     int8           `yaml:"logLevel"`
 	Local        bool           `yaml:"local"`
-	Clients      uint32         `yaml:"clients"`
 	CPUs         int            `yaml:"cpus"`
 	ConnOrderers []*OrdererInfo `yaml:"orderers"`
 	OrdererMsp   string         `yaml:"ordererMsp"`
-	Profile      string         `yaml:"profile"`
 	Channels     []string       `yaml:"channels"`
 	TlsEnabled   bool           `yaml:"tlsEnabled"`
 	ReqTimeout   int64          `yaml:"reqTimeout"`
@@ -46,4 +47,26 @@ func init() {
 
 func GetAppConf() *AppConf {
 	return appConfig
+}
+
+// goPath returns the current GOPATH. If the system
+// has multiple GOPATHs then the first is used.
+func goPath() string {
+	gpDefault := build.Default.GOPATH
+	gps := filepath.SplitList(gpDefault)
+
+	return gps[0]
+}
+
+func GetConfigPath(filename string) string {
+	const configPath = "conf"
+	return path.Join(goPath(), "src", Project, configPath, filename)
+}
+
+func GetCryptoConfigPath(filename string) string {
+	return path.Join(goPath(), "src", Project, "sampleconfig/crypto-config", filename)
+}
+
+func GetSampleConfigPath() string {
+	return path.Join(goPath(), "src", Project, "sampleconfig")
 }

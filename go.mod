@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/Shopify/sarama v1.27.2 // indirect
-	github.com/astaxie/beego v1.12.3
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/protobuf v1.3.1
@@ -13,7 +12,6 @@ require (
 	github.com/hyperledger/fabric v1.4.10-0.20201209223044-51a3a52260f6
 	github.com/hyperledger/fabric-amcl v0.0.0-20200424173818-327c9e2cf77a // indirect
 	github.com/miekg/pkcs11 v1.0.3 // indirect
-	github.com/mitchellh/mapstructure v1.4.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/spf13/cobra v1.1.1
