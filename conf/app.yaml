@@ -7,7 +7,6 @@ application:
     - name: orderer
       host: orderer.example.com
       port: 7050
-  ordererMsp: OrdererMSP
   channels:
     - mychannel
   tlsEnabled: true

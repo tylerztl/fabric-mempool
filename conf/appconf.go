@@ -20,7 +20,6 @@ type Application struct {
 	Local        bool           `yaml:"local"`
 	CPUs         int            `yaml:"cpus"`
 	ConnOrderers []*OrdererInfo `yaml:"orderers"`
-	OrdererMsp   string         `yaml:"ordererMsp"`
 	Channels     []string       `yaml:"channels"`
 	TlsEnabled   bool           `yaml:"tlsEnabled"`
 	ReqTimeout   int64          `yaml:"reqTimeout"`
@@ -35,7 +34,7 @@ type OrdererInfo struct {
 var appConfig = new(AppConf)
 
 func init() {
-	confPath := GetConfigPath("app.yaml")
+	confPath := path.Join(goPath(), "src", Project, "conf", "app.yaml")
 	yamlFile, err := ioutil.ReadFile(confPath)
 	if err != nil {
 		panic(fmt.Errorf("yamlFile.Get err[%s]", err))
@@ -58,15 +57,6 @@ func goPath() string {
 	return gps[0]
 }
 
-func GetConfigPath(filename string) string {
-	const configPath = "conf"
-	return path.Join(goPath(), "src", Project, configPath, filename)
-}
-
 func GetCryptoConfigPath(filename string) string {
-	return path.Join(goPath(), "src", Project, "sampleconfig/crypto-config", filename)
-}
-
-func GetSampleConfigPath() string {
-	return path.Join(goPath(), "src", Project, "sampleconfig")
+	return path.Join(goPath(), "src", Project, "crypto-config", filename)
 }

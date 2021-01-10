@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/fabric/msp/mgmt"
-	"github.com/hyperledger/fabric/orderer/common/localconfig" // config, for the orderer.yaml
 	cb "github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"github.com/pkg/errors"
@@ -29,25 +27,11 @@ var (
 )
 
 type TxsFetcher struct {
-	ordConf *localconfig.TopLevel
-
 	clients map[string][]*BroadcastClient // channels~orderers
 }
 
 func NewTxsFetcher() *TxsFetcher {
 	runtime.GOMAXPROCS(AppConf.CPUs)
-
-	_ = os.Setenv("FABRIC_CFG_PATH", conf.GetSampleConfigPath())
-	defer func() {
-		_ = os.Unsetenv("FABRIC_CFG_PATH")
-	}()
-
-	// Establish the default configuration from yaml files - and this also
-	// picks up any variables overridden on command line or in environment
-	ordConf, err := localconfig.Load()
-	if err != nil {
-		panic(" Cannot Load orderer config data: " + err.Error())
-	}
 
 	if len(AppConf.ConnOrderers) == 0 {
 		panic(" Cannot find connect orderers config")
@@ -59,14 +43,8 @@ func NewTxsFetcher() *TxsFetcher {
 	} else if len(matches) != 1 {
 		panic(fmt.Sprintf("No msp directory filepath name matches: %s\n", fpath))
 	}
-	ordConf.General.BCCSP.SwOpts.FileKeystore.KeyStorePath = fmt.Sprintf("%s/msp/keystore", matches[0])
-	err = mgmt.LoadLocalMsp(fmt.Sprintf("%s/msp", matches[0]), ordConf.General.BCCSP, AppConf.OrdererMsp)
-	if err != nil { // Handle errors reading the config file
-		panic(fmt.Sprintf("Failed to initialize local MSP: %v", err))
-	}
 
 	engine := &TxsFetcher{
-		ordConf,
 		getOrderers(),
 	}
 
