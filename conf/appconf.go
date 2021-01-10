@@ -17,12 +17,11 @@ type AppConf struct {
 }
 
 type Application struct {
-	Local        bool           `yaml:"local"`
-	CPUs         int            `yaml:"cpus"`
-	ConnOrderers []*OrdererInfo `yaml:"orderers"`
-	Channels     []string       `yaml:"channels"`
-	TlsEnabled   bool           `yaml:"tlsEnabled"`
-	ReqTimeout   int64          `yaml:"reqTimeout"`
+	Local      bool           `yaml:"local"`
+	CPUs       int            `yaml:"cpus"`
+	Orderers   []*OrdererInfo `yaml:"orderers"`
+	TlsEnabled bool           `yaml:"tlsEnabled"`
+	ReqTimeout int64          `yaml:"reqTimeout"`
 }
 
 type OrdererInfo struct {

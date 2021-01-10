@@ -10,8 +10,18 @@ enum StatusCode {
     FAILED = 1;
 }
 
-message SubmitResponse {
+message SubmitTxResponse {
     StatusCode status = 1;
+}
+
+message FetchTxsRequest {
+    string sender = 1;
+    int32 tx_num = 2;
+}
+
+message FetchTxsResponse {
+    int32 tx_num = 1;
+    bool is_empty = 2;
 }
 
 message EndorsedTransaction {
@@ -19,5 +29,8 @@ message EndorsedTransaction {
 }
 
 service Mempool {
-    rpc SubmitTransaction (EndorsedTransaction) returns (SubmitResponse) {}
+    rpc SubmitTransaction (EndorsedTransaction) returns (SubmitTxResponse) {
+    }
+    rpc FetchTransactions (FetchTxsRequest) returns (FetchTxsResponse) {
+    }
 }

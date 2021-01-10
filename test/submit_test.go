@@ -1,0 +1,106 @@
+package test
+
+import (
+	"fmt"
+	"strconv"
+	"sync"
+	"testing"
+
+	"github.com/golang/protobuf/proto"
+	mockmsp "github.com/hyperledger/fabric/common/mocks/msp"
+	cb "github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
+	pb "github.com/tylerztl/fabric-mempool/protos"
+	"golang.org/x/net/context"
+)
+
+var producersWG sync.WaitGroup
+
+func sendTransaction(payload []byte) (pb.StatusCode, error) {
+	conn := NewConn()
+	defer conn.Close()
+
+	c := pb.NewMempoolClient(conn)
+	context := context.Background()
+	env := createSignedTx(payload)
+	body, err := proto.Marshal(env)
+	if err != nil {
+		return pb.StatusCode_FAILED, err
+	}
+
+	if r, err := c.SubmitTransaction(context, &pb.EndorsedTransaction{Tx: body}); err != nil {
+		return pb.StatusCode_FAILED, err
+	} else {
+		return r.Status, nil
+	}
+}
+
+func syncSendTransaction(c pb.MempoolClient, payload []byte) (pb.StatusCode, error) {
+	context := context.Background()
+
+	env := createSignedTx(payload)
+	body, err := proto.Marshal(env)
+	if err != nil {
+		return pb.StatusCode_FAILED, err
+	}
+
+	if r, err := c.SubmitTransaction(context, &pb.EndorsedTransaction{Tx: body}); err != nil {
+		producersWG.Done()
+		return pb.StatusCode_FAILED, err
+	} else {
+		producersWG.Done()
+		fmt.Println("Status: ", r.Status)
+		return r.Status, nil
+	}
+}
+
+func createSignedTx(payload []byte) *cb.Envelope {
+	prop := &peer.Proposal{}
+	signID, _ := mockmsp.NewNoopMsp().GetDefaultSigningIdentity()
+	signerBytes, _ := signID.Serialize()
+	ccHeaderExtensionBytes, _ := proto.Marshal(&peer.ChaincodeHeaderExtension{})
+	chdrBytes, _ := proto.Marshal(&cb.ChannelHeader{
+		Extension: ccHeaderExtensionBytes,
+	})
+	shdrBytes, _ := proto.Marshal(&cb.SignatureHeader{
+		Creator: signerBytes,
+	})
+	responses := []*peer.ProposalResponse{
+		{
+			Payload:     payload,
+			Endorsement: &peer.Endorsement{},
+			Response: &peer.Response{
+				Status:  200,
+				Message: "response-message",
+			},
+		},
+	}
+	headerBytes, _ := proto.Marshal(&cb.Header{
+		ChannelHeader:   chdrBytes,
+		SignatureHeader: shdrBytes,
+	})
+	prop.Header = headerBytes
+	env, _ := utils.CreateSignedTx(prop, signID, responses...)
+	return env
+}
+
+func TestSendTransaction(t *testing.T) {
+	status, err := sendTransaction([]byte("payload"))
+	if status != pb.StatusCode_SUCCESS || err != nil {
+		t.Error("Send transaction failed")
+	}
+}
+
+func TestSyncSendTransaction(t *testing.T) {
+	conn := NewConn()
+	defer conn.Close()
+	c := pb.NewMempoolClient(conn)
+
+	txNums := 10000
+	producersWG.Add(txNums)
+	for i := 0; i < txNums; i++ {
+		go syncSendTransaction(c, []byte(strconv.Itoa(i)))
+	}
+	producersWG.Wait()
+}

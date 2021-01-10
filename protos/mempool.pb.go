@@ -70,7 +70,7 @@ func (StatusCode) EnumDescriptor() ([]byte, []int) {
 	return file_mempool_proto_rawDescGZIP(), []int{0}
 }
 
-type SubmitResponse struct {
+type SubmitTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -78,8 +78,8 @@ type SubmitResponse struct {
 	Status StatusCode `protobuf:"varint,1,opt,name=status,proto3,enum=protos.StatusCode" json:"status,omitempty"`
 }
 
-func (x *SubmitResponse) Reset() {
-	*x = SubmitResponse{}
+func (x *SubmitTxResponse) Reset() {
+	*x = SubmitTxResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_mempool_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -87,13 +87,13 @@ func (x *SubmitResponse) Reset() {
 	}
 }
 
-func (x *SubmitResponse) String() string {
+func (x *SubmitTxResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SubmitResponse) ProtoMessage() {}
+func (*SubmitTxResponse) ProtoMessage() {}
 
-func (x *SubmitResponse) ProtoReflect() protoreflect.Message {
+func (x *SubmitTxResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_mempool_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -105,16 +105,126 @@ func (x *SubmitResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SubmitResponse.ProtoReflect.Descriptor instead.
-func (*SubmitResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SubmitTxResponse.ProtoReflect.Descriptor instead.
+func (*SubmitTxResponse) Descriptor() ([]byte, []int) {
 	return file_mempool_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SubmitResponse) GetStatus() StatusCode {
+func (x *SubmitTxResponse) GetStatus() StatusCode {
 	if x != nil {
 		return x.Status
 	}
 	return StatusCode_SUCCESS
+}
+
+type FetchTxsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Sender string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	TxNum  int32  `protobuf:"varint,2,opt,name=tx_num,json=txNum,proto3" json:"tx_num,omitempty"`
+}
+
+func (x *FetchTxsRequest) Reset() {
+	*x = FetchTxsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mempool_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FetchTxsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FetchTxsRequest) ProtoMessage() {}
+
+func (x *FetchTxsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mempool_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FetchTxsRequest.ProtoReflect.Descriptor instead.
+func (*FetchTxsRequest) Descriptor() ([]byte, []int) {
+	return file_mempool_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *FetchTxsRequest) GetSender() string {
+	if x != nil {
+		return x.Sender
+	}
+	return ""
+}
+
+func (x *FetchTxsRequest) GetTxNum() int32 {
+	if x != nil {
+		return x.TxNum
+	}
+	return 0
+}
+
+type FetchTxsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TxNum   int32 `protobuf:"varint,1,opt,name=tx_num,json=txNum,proto3" json:"tx_num,omitempty"`
+	IsEmpty bool  `protobuf:"varint,2,opt,name=is_empty,json=isEmpty,proto3" json:"is_empty,omitempty"`
+}
+
+func (x *FetchTxsResponse) Reset() {
+	*x = FetchTxsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mempool_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FetchTxsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FetchTxsResponse) ProtoMessage() {}
+
+func (x *FetchTxsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mempool_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FetchTxsResponse.ProtoReflect.Descriptor instead.
+func (*FetchTxsResponse) Descriptor() ([]byte, []int) {
+	return file_mempool_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FetchTxsResponse) GetTxNum() int32 {
+	if x != nil {
+		return x.TxNum
+	}
+	return 0
+}
+
+func (x *FetchTxsResponse) GetIsEmpty() bool {
+	if x != nil {
+		return x.IsEmpty
+	}
+	return false
 }
 
 type EndorsedTransaction struct {
@@ -128,7 +238,7 @@ type EndorsedTransaction struct {
 func (x *EndorsedTransaction) Reset() {
 	*x = EndorsedTransaction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mempool_proto_msgTypes[1]
+		mi := &file_mempool_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -141,7 +251,7 @@ func (x *EndorsedTransaction) String() string {
 func (*EndorsedTransaction) ProtoMessage() {}
 
 func (x *EndorsedTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_mempool_proto_msgTypes[1]
+	mi := &file_mempool_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -154,7 +264,7 @@ func (x *EndorsedTransaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndorsedTransaction.ProtoReflect.Descriptor instead.
 func (*EndorsedTransaction) Descriptor() ([]byte, []int) {
-	return file_mempool_proto_rawDescGZIP(), []int{1}
+	return file_mempool_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EndorsedTransaction) GetTx() []byte {
@@ -168,26 +278,40 @@ var File_mempool_proto protoreflect.FileDescriptor
 
 var file_mempool_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x6d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x22, 0x3c, 0x0a, 0x0e, 0x53, 0x75, 0x62, 0x6d, 0x69,
-	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x06, 0x73, 0x74, 0x61,
-	0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x12, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x73, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x43, 0x6f, 0x64, 0x65, 0x52, 0x06, 0x73,
-	0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x25, 0x0a, 0x13, 0x45, 0x6e, 0x64, 0x6f, 0x72, 0x73, 0x65,
-	0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02,
-	0x74, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x74, 0x78, 0x2a, 0x25, 0x0a, 0x0a,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x43, 0x6f, 0x64, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55,
-	0x43, 0x43, 0x45, 0x53, 0x53, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x46, 0x41, 0x49, 0x4c, 0x45,
-	0x44, 0x10, 0x01, 0x32, 0x55, 0x0a, 0x07, 0x4d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c, 0x12, 0x4a,
-	0x0a, 0x11, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x12, 0x1b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x45, 0x6e, 0x64,
-	0x6f, 0x72, 0x73, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x1a, 0x16, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x46, 0x0a, 0x19, 0x6f, 0x72,
-	0x67, 0x2e, 0x66, 0x61, 0x62, 0x72, 0x69, 0x63, 0x2d, 0x6d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x5a, 0x29, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x79, 0x6c, 0x65, 0x72, 0x7a, 0x74, 0x6c, 0x2f, 0x66, 0x61, 0x62,
-	0x72, 0x69, 0x63, 0x2d, 0x6d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x22, 0x3e, 0x0a, 0x10, 0x53, 0x75, 0x62, 0x6d, 0x69,
+	0x74, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x06, 0x73,
+	0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x12, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x43, 0x6f, 0x64, 0x65, 0x52,
+	0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x40, 0x0a, 0x0f, 0x46, 0x65, 0x74, 0x63, 0x68,
+	0x54, 0x78, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x65,
+	0x6e, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x65, 0x6e, 0x64,
+	0x65, 0x72, 0x12, 0x15, 0x0a, 0x06, 0x74, 0x78, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x05, 0x74, 0x78, 0x4e, 0x75, 0x6d, 0x22, 0x44, 0x0a, 0x10, 0x46, 0x65, 0x74,
+	0x63, 0x68, 0x54, 0x78, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x15, 0x0a,
+	0x06, 0x74, 0x78, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x74,
+	0x78, 0x4e, 0x75, 0x6d, 0x12, 0x19, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x69, 0x73, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22,
+	0x25, 0x0a, 0x13, 0x45, 0x6e, 0x64, 0x6f, 0x72, 0x73, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x74, 0x78, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x02, 0x74, 0x78, 0x2a, 0x25, 0x0a, 0x0a, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73,
+	0x43, 0x6f, 0x64, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55, 0x43, 0x43, 0x45, 0x53, 0x53, 0x10,
+	0x00, 0x12, 0x0a, 0x0a, 0x06, 0x46, 0x41, 0x49, 0x4c, 0x45, 0x44, 0x10, 0x01, 0x32, 0xa1, 0x01,
+	0x0a, 0x07, 0x4d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c, 0x12, 0x4c, 0x0a, 0x11, 0x53, 0x75, 0x62,
+	0x6d, 0x69, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1b,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x45, 0x6e, 0x64, 0x6f, 0x72, 0x73, 0x65, 0x64,
+	0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x18, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x54, 0x78, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x48, 0x0a, 0x11, 0x46, 0x65, 0x74, 0x63, 0x68,
+	0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x17, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x46, 0x65, 0x74, 0x63, 0x68, 0x54, 0x78, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x46,
+	0x65, 0x74, 0x63, 0x68, 0x54, 0x78, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x00, 0x42, 0x46, 0x0a, 0x19, 0x6f, 0x72, 0x67, 0x2e, 0x66, 0x61, 0x62, 0x72, 0x69, 0x63, 0x2d,
+	0x6d, 0x65, 0x6d, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x5a, 0x29,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x79, 0x6c, 0x65, 0x72,
+	0x7a, 0x74, 0x6c, 0x2f, 0x66, 0x61, 0x62, 0x72, 0x69, 0x63, 0x2d, 0x6d, 0x65, 0x6d, 0x70, 0x6f,
+	0x6f, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -203,18 +327,22 @@ func file_mempool_proto_rawDescGZIP() []byte {
 }
 
 var file_mempool_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_mempool_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_mempool_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_mempool_proto_goTypes = []interface{}{
 	(StatusCode)(0),             // 0: protos.StatusCode
-	(*SubmitResponse)(nil),      // 1: protos.SubmitResponse
-	(*EndorsedTransaction)(nil), // 2: protos.EndorsedTransaction
+	(*SubmitTxResponse)(nil),    // 1: protos.SubmitTxResponse
+	(*FetchTxsRequest)(nil),     // 2: protos.FetchTxsRequest
+	(*FetchTxsResponse)(nil),    // 3: protos.FetchTxsResponse
+	(*EndorsedTransaction)(nil), // 4: protos.EndorsedTransaction
 }
 var file_mempool_proto_depIdxs = []int32{
-	0, // 0: protos.SubmitResponse.status:type_name -> protos.StatusCode
-	2, // 1: protos.Mempool.SubmitTransaction:input_type -> protos.EndorsedTransaction
-	1, // 2: protos.Mempool.SubmitTransaction:output_type -> protos.SubmitResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	0, // 0: protos.SubmitTxResponse.status:type_name -> protos.StatusCode
+	4, // 1: protos.Mempool.SubmitTransaction:input_type -> protos.EndorsedTransaction
+	2, // 2: protos.Mempool.FetchTransactions:input_type -> protos.FetchTxsRequest
+	1, // 3: protos.Mempool.SubmitTransaction:output_type -> protos.SubmitTxResponse
+	3, // 4: protos.Mempool.FetchTransactions:output_type -> protos.FetchTxsResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -227,7 +355,7 @@ func file_mempool_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_mempool_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubmitResponse); i {
+			switch v := v.(*SubmitTxResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -239,6 +367,30 @@ func file_mempool_proto_init() {
 			}
 		}
 		file_mempool_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FetchTxsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mempool_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FetchTxsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mempool_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EndorsedTransaction); i {
 			case 0:
 				return &v.state
@@ -257,7 +409,7 @@ func file_mempool_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_mempool_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -284,7 +436,8 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MempoolClient interface {
-	SubmitTransaction(ctx context.Context, in *EndorsedTransaction, opts ...grpc.CallOption) (*SubmitResponse, error)
+	SubmitTransaction(ctx context.Context, in *EndorsedTransaction, opts ...grpc.CallOption) (*SubmitTxResponse, error)
+	FetchTransactions(ctx context.Context, in *FetchTxsRequest, opts ...grpc.CallOption) (*FetchTxsResponse, error)
 }
 
 type mempoolClient struct {
@@ -295,9 +448,18 @@ func NewMempoolClient(cc grpc.ClientConnInterface) MempoolClient {
 	return &mempoolClient{cc}
 }
 
-func (c *mempoolClient) SubmitTransaction(ctx context.Context, in *EndorsedTransaction, opts ...grpc.CallOption) (*SubmitResponse, error) {
-	out := new(SubmitResponse)
+func (c *mempoolClient) SubmitTransaction(ctx context.Context, in *EndorsedTransaction, opts ...grpc.CallOption) (*SubmitTxResponse, error) {
+	out := new(SubmitTxResponse)
 	err := c.cc.Invoke(ctx, "/protos.Mempool/SubmitTransaction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mempoolClient) FetchTransactions(ctx context.Context, in *FetchTxsRequest, opts ...grpc.CallOption) (*FetchTxsResponse, error) {
+	out := new(FetchTxsResponse)
+	err := c.cc.Invoke(ctx, "/protos.Mempool/FetchTransactions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -306,15 +468,19 @@ func (c *mempoolClient) SubmitTransaction(ctx context.Context, in *EndorsedTrans
 
 // MempoolServer is the server API for Mempool service.
 type MempoolServer interface {
-	SubmitTransaction(context.Context, *EndorsedTransaction) (*SubmitResponse, error)
+	SubmitTransaction(context.Context, *EndorsedTransaction) (*SubmitTxResponse, error)
+	FetchTransactions(context.Context, *FetchTxsRequest) (*FetchTxsResponse, error)
 }
 
 // UnimplementedMempoolServer can be embedded to have forward compatible implementations.
 type UnimplementedMempoolServer struct {
 }
 
-func (*UnimplementedMempoolServer) SubmitTransaction(context.Context, *EndorsedTransaction) (*SubmitResponse, error) {
+func (*UnimplementedMempoolServer) SubmitTransaction(context.Context, *EndorsedTransaction) (*SubmitTxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitTransaction not implemented")
+}
+func (*UnimplementedMempoolServer) FetchTransactions(context.Context, *FetchTxsRequest) (*FetchTxsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchTransactions not implemented")
 }
 
 func RegisterMempoolServer(s *grpc.Server, srv MempoolServer) {
@@ -339,6 +505,24 @@ func _Mempool_SubmitTransaction_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Mempool_FetchTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchTxsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MempoolServer).FetchTransactions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protos.Mempool/FetchTransactions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MempoolServer).FetchTransactions(ctx, req.(*FetchTxsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Mempool_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "protos.Mempool",
 	HandlerType: (*MempoolServer)(nil),
@@ -346,6 +530,10 @@ var _Mempool_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitTransaction",
 			Handler:    _Mempool_SubmitTransaction_Handler,
+		},
+		{
+			MethodName: "FetchTransactions",
+			Handler:    _Mempool_FetchTransactions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
