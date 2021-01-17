@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/types"
 	"github.com/tylerztl/fabric-mempool/mempool"
 	pb "github.com/tylerztl/fabric-mempool/protos"
 )
@@ -29,11 +30,14 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		return &pb.FetchTxsResponse{TxNum: 0, IsEmpty: true}, nil
 	}
 
-	expectedTxs := int(ftx.TxNum)
+	expectedTxs := int(ftx.TxNum) -1
 
 	txs := h.Mempool.ReapMaxTxs(expectedTxs)
 	actualTxs := len(txs)
 	isEmpty := actualTxs < expectedTxs
+
+	logger.Info("orderer fetch transactions", "orderer", ftx.Sender,
+		"actualTxs", actualTxs, "expectedTxs", expectedTxs, "mempool", h.Mempool.Size())
 
 	orderer := h.fetcher.GetOrderer(ftx.Sender)
 	if orderer == nil {
@@ -41,11 +45,21 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 	}
 
 	go func() {
+		committedTxs := make(types.Txs, 0)
 		for _, tx := range txs {
 			err := orderer.broadcast(tx)
 			if err != nil {
-				logger.Error("failed to broadcast endorsed tx to orderer service")
+				logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
+				if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
+					logger.Error("retry broadcast endorsed tx to orderer service", "orderer", ftx.Sender)
+					continue
+				}
 			}
+
+			committedTxs = append(committedTxs, tx)
+		}
+		if err := h.Mempool.Update(1, committedTxs, nil, nil, nil); err != nil {
+			logger.Error("txs committed update failed", "error", err)
 		}
 	}()
 
@@ -65,6 +79,7 @@ func NewHandler() *Handler {
 	cfg := config.DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	cfg.RootDir = rootDir
+	cfg.Size = 10000
 
 	pool := mempool.NewCListMempool(cfg, 0)
 	pool.SetLogger(logger)

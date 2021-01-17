@@ -99,16 +99,39 @@ func getOrderers() map[string]*BroadcastClient {
 		}
 
 		logger.Info("Connected orderer service", "ordererAddr", serverAddr)
-
-		ordererClients[orderer.Name] = &BroadcastClient{client: client}
+		ordererClients[orderer.Name] = &BroadcastClient{
+			serverAddr: serverAddr,
+			dialOpts:   dialOpts,
+			client:     client}
 	}
 
 	return ordererClients
 }
 
 type BroadcastClient struct {
-	client ab.AtomicBroadcast_BroadcastClient
-	mutex  sync.Mutex
+	serverAddr string
+	dialOpts   []grpc.DialOption
+	client     ab.AtomicBroadcast_BroadcastClient
+	mutex      sync.Mutex
+}
+
+func (b *BroadcastClient) resetConnect() error {
+	ctx, _ := context.WithTimeout(context.Background(), ConnTimeout)
+	//defer cancel()
+
+	ordererConn, err := grpc.DialContext(ctx, b.serverAddr, b.dialOpts...)
+	if err != nil {
+		logger.Error("Error reset connecting (grpc) to %s, err: %v", b.serverAddr, err)
+		return err
+	}
+	client, err := ab.NewAtomicBroadcastClient(ordererConn).Broadcast(context.TODO())
+	if err != nil {
+		logger.Error("Error reset creating broadcast client for orderer[%s] , err: %v", b.serverAddr, err)
+		return err
+	}
+	logger.Info("Connected orderer service", "ordererAddr", b.serverAddr)
+	b.client = client
+	return nil
 }
 
 func (b *BroadcastClient) broadcast(transaction []byte) error {

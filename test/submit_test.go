@@ -5,8 +5,10 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	mockmsp "github.com/hyperledger/fabric/common/mocks/msp"
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -61,6 +63,14 @@ func createSignedTx(payload []byte) *cb.Envelope {
 	signerBytes, _ := signID.Serialize()
 	ccHeaderExtensionBytes, _ := proto.Marshal(&peer.ChaincodeHeaderExtension{})
 	chdrBytes, _ := proto.Marshal(&cb.ChannelHeader{
+		Type:    int32(cb.HeaderType_MESSAGE),
+		Version: 1,
+		Timestamp: &timestamp.Timestamp{
+			Seconds: time.Now().Unix(),
+			Nanos:   0,
+		},
+		ChannelId: "mychannel",
+		Epoch:     1,
 		Extension: ccHeaderExtensionBytes,
 	})
 	shdrBytes, _ := proto.Marshal(&cb.SignatureHeader{
@@ -88,7 +98,7 @@ func createSignedTx(payload []byte) *cb.Envelope {
 func TestSendTransaction(t *testing.T) {
 	status, err := sendTransaction([]byte("payload"))
 	if status != pb.StatusCode_SUCCESS || err != nil {
-		t.Error("Send transaction failed")
+		t.Error(err)
 	}
 }
 

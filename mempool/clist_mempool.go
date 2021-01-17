@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"container/list"
 	"crypto/sha256"
 	"fmt"
@@ -291,10 +290,10 @@ func (mem *CListMempool) reqResCb(
 	tx []byte,
 	peerID uint16,
 ) {
-	if mem.recheckCursor != nil {
-		// this should never happen
-		panic("recheck cursor is not nil in reqResCb")
-	}
+	//if mem.recheckCursor != nil {
+	//	// this should never happen
+	//	panic("recheck cursor is not nil in reqResCb")
+	//}
 
 	mem.resCbFirstTime(tx, peerID)
 
@@ -381,52 +380,6 @@ func (mem *CListMempool) resCbFirstTime(
 		"total", mem.Size(),
 	)
 	mem.notifyTxsAvailable()
-}
-
-// callback, which is called after the app rechecked the tx.
-//
-// The case where the app checks the tx for the first time is handled by the
-// resCbFirstTime callback.
-func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
-	switch r := res.Value.(type) {
-	case *abci.Response_CheckTx:
-		tx := req.GetCheckTx().Tx
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
-		if !bytes.Equal(tx, memTx.tx) {
-			panic(fmt.Sprintf(
-				"Unexpected tx response from proxy during recheck\nExpected %X, got %X",
-				memTx.tx,
-				tx))
-		}
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, r.CheckTx)
-		}
-		if (r.CheckTx.Code == abci.CodeTypeOK) && postCheckErr == nil {
-			// Good, nothing to do.
-		} else {
-			// Tx became invalidated due to newly committed block.
-			mem.logger.Info("Tx is no longer valid", "tx", txID(tx), "res", r, "err", postCheckErr)
-			// NOTE: we remove tx from the cache because it might be good later
-			mem.removeTx(tx, mem.recheckCursor, !mem.config.KeepInvalidTxsInCache)
-		}
-		if mem.recheckCursor == mem.recheckEnd {
-			mem.recheckCursor = nil
-		} else {
-			mem.recheckCursor = mem.recheckCursor.Next()
-		}
-		if mem.recheckCursor == nil {
-			// Done!
-			mem.logger.Info("Done rechecking txs")
-
-			// incase the recheck removed all txs
-			if mem.Size() > 0 {
-				mem.notifyTxsAvailable()
-			}
-		}
-	default:
-		// ignore other messages
-	}
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -518,14 +471,15 @@ func (mem *CListMempool) Update(
 		mem.postCheck = postCheck
 	}
 
-	for i, tx := range txs {
-		if deliverTxResponses[i].Code == abci.CodeTypeOK {
-			// Add valid committed tx to the cache (if missing).
-			_ = mem.cache.Push(tx)
-		} else if !mem.config.KeepInvalidTxsInCache {
-			// Allow invalid transactions to be resubmitted.
-			mem.cache.Remove(tx)
-		}
+	for _, tx := range txs {
+		// TODO
+		//if deliverTxResponses[i].Code == abci.CodeTypeOK {
+		//	// Add valid committed tx to the cache (if missing).
+		//	_ = mem.cache.Push(tx)
+		//} else if !mem.config.KeepInvalidTxsInCache {
+		//	// Allow invalid transactions to be resubmitted.
+		//	mem.cache.Remove(tx)
+		//}
 
 		// Remove committed tx from the mempool.
 		//
@@ -546,6 +500,8 @@ func (mem *CListMempool) Update(
 	// or just notify there're some txs left.
 	if mem.Size() > 0 {
 		if mem.config.Recheck {
+			mem.logger.Info("Recheck txs", "numtxs", mem.Size(), "height", height)
+			mem.recheckTxs()
 			// At this point, mem.txs are being rechecked.
 			// mem.recheckCursor re-scans mem.txs and possibly removes some txs.
 			// Before mem.Reap(), we should wait for mem.recheckCursor to be nil.
@@ -558,6 +514,15 @@ func (mem *CListMempool) Update(
 	mem.metrics.Size.Set(float64(mem.Size()))
 
 	return nil
+}
+
+func (mem *CListMempool) recheckTxs() {
+	if mem.Size() == 0 {
+		panic("recheckTxs is called, but the mempool is empty")
+	}
+
+	mem.recheckCursor = mem.txs.Front()
+	mem.recheckEnd = mem.txs.Back()
 }
 
 //--------------------------------------------------------------------------------
