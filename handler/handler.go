@@ -3,10 +3,13 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 
 	pb "github.com/hyperledger/fabric/protos/common"
+	"github.com/tylerztl/fabric-mempool/protoutil"
+
 	//"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tylerztl/fabric-mempool/mempool"
@@ -35,6 +38,15 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 	txs := h.Mempool.ReapMaxTxs(expectedTxs - 1)
 	actualTxs := len(txs)
 	isEmpty := actualTxs < expectedTxs
+
+	for _, tx := range txs {
+		fee, err := protoutil.GetTxFeeFromEnvelope(tx)
+		if err != nil {
+			fmt.Printf("Unmarshal tx failed: %s", err)
+			continue
+		}
+		logger.Info("Unmarshal tx", "fee", fee)
+	}
 
 	logger.Info("orderer fetch transactions", "orderer", ftx.Sender,
 		"actualTxs", actualTxs, "expectedTxs", expectedTxs, "mempool", h.Mempool.Size())

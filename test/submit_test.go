@@ -71,6 +71,7 @@ func createSignedTx(payload []byte) *cb.Envelope {
 		ChannelId: "mychannel",
 		Epoch:     1,
 		Extension: ccHeaderExtensionBytes,
+		FeeLimit:  []byte("10"),
 	})
 	shdrBytes, _ := proto.Marshal(&cb.SignatureHeader{
 		Creator: signerBytes,
