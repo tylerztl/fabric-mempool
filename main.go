@@ -4,10 +4,10 @@ import (
 	"net"
 	"os"
 
+	pb "github.com/hyperledger/fabric/protos/common"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tylerztl/fabric-mempool/handler"
-	pb "github.com/tylerztl/fabric-mempool/protos"
 	"google.golang.org/grpc"
 )
 

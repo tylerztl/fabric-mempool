@@ -10,7 +10,7 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/tylerztl/fabric-mempool/protos"
+	pb "github.com/hyperledger/fabric/protos/common"
 )
 
 func TestFetchTxs(t *testing.T) {

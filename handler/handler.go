@@ -6,10 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	pb "github.com/hyperledger/fabric/protos/common"
+	//"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/types"
 	"github.com/tylerztl/fabric-mempool/mempool"
-	pb "github.com/tylerztl/fabric-mempool/protos"
 )
 
 type Handler struct {
@@ -30,9 +30,9 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		return &pb.FetchTxsResponse{TxNum: 0, IsEmpty: true}, nil
 	}
 
-	expectedTxs := int(ftx.TxNum) -1
+	expectedTxs := int(ftx.TxNum)
 
-	txs := h.Mempool.ReapMaxTxs(expectedTxs)
+	txs := h.Mempool.ReapMaxTxs(expectedTxs - 1)
 	actualTxs := len(txs)
 	isEmpty := actualTxs < expectedTxs
 
@@ -44,24 +44,29 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		return nil, errors.New("not found orderer connected client")
 	}
 
-	go func() {
-		committedTxs := make(types.Txs, 0)
-		for _, tx := range txs {
-			err := orderer.broadcast(tx)
-			if err != nil {
-				logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
-				if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
-					logger.Error("retry broadcast endorsed tx to orderer service", "orderer", ftx.Sender)
-					continue
-				}
-			}
+	// TODO
+	//go func() {
+	//	committedTxs := make(types.Txs, 0)
+	//	for _, tx := range txs {
+	//		err := orderer.broadcast(tx)
+	//		if err != nil {
+	//			logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
+	//			if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
+	//				logger.Error("retry broadcast endorsed tx to orderer service", "orderer", ftx.Sender)
+	//				continue
+	//			}
+	//		}
+	//
+	//		committedTxs = append(committedTxs, tx)
+	//	}
+	//	if err := h.Mempool.Update(1, committedTxs, nil, nil, nil); err != nil {
+	//		logger.Error("txs committed update failed", "error", err)
+	//	}
+	//}()
 
-			committedTxs = append(committedTxs, tx)
-		}
-		if err := h.Mempool.Update(1, committedTxs, nil, nil, nil); err != nil {
-			logger.Error("txs committed update failed", "error", err)
-		}
-	}()
+	if err := h.Mempool.Update(1, txs, nil, nil, nil); err != nil {
+		logger.Error("txs committed update failed", "error", err)
+	}
 
 	return &pb.FetchTxsResponse{TxNum: int32(actualTxs), IsEmpty: isEmpty}, nil
 }

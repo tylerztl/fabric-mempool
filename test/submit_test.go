@@ -13,43 +13,42 @@ import (
 	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
-	pb "github.com/tylerztl/fabric-mempool/protos"
 	"golang.org/x/net/context"
 )
 
 var producersWG sync.WaitGroup
 
-func sendTransaction(payload []byte) (pb.StatusCode, error) {
+func sendTransaction(payload []byte) (cb.StatusCode, error) {
 	conn := NewConn()
 	defer conn.Close()
 
-	c := pb.NewMempoolClient(conn)
+	c := cb.NewMempoolClient(conn)
 	context := context.Background()
 	env := createSignedTx(payload)
 	body, err := proto.Marshal(env)
 	if err != nil {
-		return pb.StatusCode_FAILED, err
+		return cb.StatusCode_FAILED, err
 	}
 
-	if r, err := c.SubmitTransaction(context, &pb.EndorsedTransaction{Tx: body}); err != nil {
-		return pb.StatusCode_FAILED, err
+	if r, err := c.SubmitTransaction(context, &cb.EndorsedTransaction{Tx: body}); err != nil {
+		return cb.StatusCode_FAILED, err
 	} else {
 		return r.Status, nil
 	}
 }
 
-func syncSendTransaction(c pb.MempoolClient, payload []byte) (pb.StatusCode, error) {
+func syncSendTransaction(c cb.MempoolClient, payload []byte) (cb.StatusCode, error) {
 	context := context.Background()
 
 	env := createSignedTx(payload)
 	body, err := proto.Marshal(env)
 	if err != nil {
-		return pb.StatusCode_FAILED, err
+		return cb.StatusCode_FAILED, err
 	}
 
-	if r, err := c.SubmitTransaction(context, &pb.EndorsedTransaction{Tx: body}); err != nil {
+	if r, err := c.SubmitTransaction(context, &cb.EndorsedTransaction{Tx: body}); err != nil {
 		producersWG.Done()
-		return pb.StatusCode_FAILED, err
+		return cb.StatusCode_FAILED, err
 	} else {
 		producersWG.Done()
 		fmt.Println("Status: ", r.Status)
@@ -97,7 +96,7 @@ func createSignedTx(payload []byte) *cb.Envelope {
 
 func TestSendTransaction(t *testing.T) {
 	status, err := sendTransaction([]byte("payload"))
-	if status != pb.StatusCode_SUCCESS || err != nil {
+	if status != cb.StatusCode_SUCCESS || err != nil {
 		t.Error(err)
 	}
 }
@@ -105,7 +104,7 @@ func TestSendTransaction(t *testing.T) {
 func TestSyncSendTransaction(t *testing.T) {
 	conn := NewConn()
 	defer conn.Close()
-	c := pb.NewMempoolClient(conn)
+	c := cb.NewMempoolClient(conn)
 
 	txNums := 10000
 	producersWG.Add(txNums)

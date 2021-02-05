@@ -23,6 +23,7 @@ require (
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	google.golang.org/grpc v1.34.0
-	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/hyperledger/fabric v1.4.10-0.20201209223044-51a3a52260f6 => github.com/tylerztl/fabric-cityu v1.4.11-0.20210203170922-3fcce2c71f37
