@@ -112,6 +112,8 @@ func getOrderers(config *conf.DistributeConfig) map[string]*BroadcastClient {
 			client:     client,
 			joinTime:   time.Now().Unix(),
 			config:     config,
+			totalTax:   big.NewInt(0),
+			orderCount: big.NewInt(0),
 		}
 	}
 
