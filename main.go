@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/tylerztl/fabric-mempool/conf"
 	"net"
 	"os"
 
@@ -18,6 +19,8 @@ var rootCmd = &cobra.Command{
 	Short: "Run the fabric-mempool component server",
 }
 
+var distributeConfig = conf.DistributeConfig{}
+
 var serverCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Run the gRPC fabric-sdk server",
@@ -31,7 +34,7 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "server port")
-
+	serverCmd.Flags().IntVarP(&distributeConfig.DistributionType, "distribute", "d", 0, "distribution type")
 	rootCmd.AddCommand(serverCmd)
 }
 
@@ -65,7 +68,7 @@ func Run() error {
 func newGrpc() *grpc.Server {
 	server := grpc.NewServer()
 	// TODO
-	pb.RegisterMempoolServer(server, handler.NewHandler())
+	pb.RegisterMempoolServer(server, handler.NewHandler(&distributeConfig))
 
 	return server
 }

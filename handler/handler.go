@@ -4,19 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/tylerztl/fabric-mempool/conf"
+	"github.com/tylerztl/fabric-mempool/protoutil"
 	"io/ioutil"
+	"math/big"
 	"os"
 
 	pb "github.com/hyperledger/fabric/protos/common"
-	"github.com/tylerztl/fabric-mempool/protoutil"
-
 	//"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tylerztl/fabric-mempool/mempool"
 )
 
 type Handler struct {
-	fetcher *TxsFetcher
+	fetcher          *TxsFetcher
+	distributeConfig *conf.DistributeConfig
 	mempool.Mempool
 }
 
@@ -26,6 +28,31 @@ func (h *Handler) SubmitTransaction(ctx context.Context, etx *pb.EndorsedTransac
 		return nil, err
 	}
 	return &pb.SubmitTxResponse{Status: pb.StatusCode_SUCCESS}, nil
+}
+
+// distribute check tax add to one orderer or average all orderer
+func (h *Handler) distribute(tax *big.Int, orderer *BroadcastClient) {
+	if h.distributeConfig.DistributionType == 1 {
+		orderers := h.fetcher.GetOrderers()
+		ordererCount := big.NewInt(int64(len(orderers)))
+		// if less some tax after average tax, add to orderer which deal the order
+		average := new(big.Int).Div(tax, ordererCount)
+		less := new(big.Int).Sub(tax, new(big.Int).Mul(ordererCount, average))
+		orderer.AddTax(less)
+		for _, item := range orderers {
+			item.AddTax(average)
+		}
+	} else {
+		orderer.AddTax(tax)
+	}
+}
+
+func (h *Handler) GetOrdererLog(name string) (string, error) {
+	orderer := h.fetcher.GetOrderer(name)
+	if orderer == nil {
+		return "", errors.New("not found orderer connected client")
+	}
+	return orderer.LogOut(), nil
 }
 
 func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest) (*pb.FetchTxsResponse, error) {
@@ -39,21 +66,22 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 	actualTxs := len(txs)
 	isEmpty := actualTxs < expectedTxs
 
-	for _, tx := range txs {
-		fee, err := protoutil.GetTxFeeFromEnvelope(tx)
-		if err != nil {
-			fmt.Printf("Unmarshal tx failed: %s", err)
-			continue
-		}
-		logger.Info("Unmarshal tx", "fee", fee)
-	}
-
 	logger.Info("orderer fetch transactions", "orderer", ftx.Sender,
 		"actualTxs", actualTxs, "expectedTxs", expectedTxs, "mempool", h.Mempool.Size())
 
 	orderer := h.fetcher.GetOrderer(ftx.Sender)
 	if orderer == nil {
 		return nil, errors.New("not found orderer connected client")
+	}
+
+	for _, tx := range txs {
+		fee, err := protoutil.GetTxFeeFromEnvelope(tx)
+		if err != nil {
+			fmt.Printf("Unmarshal tx failed: %s", err)
+			continue
+		}
+		h.distribute(fee, orderer)
+		logger.Info("Unmarshal tx", "fee", fee)
 	}
 
 	// TODO
@@ -83,7 +111,7 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 	return &pb.FetchTxsResponse{TxNum: int32(actualTxs), IsEmpty: isEmpty}, nil
 }
 
-func NewHandler() *Handler {
+func NewHandler(distributeConfig *conf.DistributeConfig) *Handler {
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir, err := ioutil.TempDir("", "fabric-mempool_")
 	if err != nil {
@@ -102,7 +130,8 @@ func NewHandler() *Handler {
 	pool.SetLogger(logger)
 
 	return &Handler{
-		fetcher: NewTxsFetcher(),
-		Mempool: pool,
+		fetcher:          NewTxsFetcher(distributeConfig),
+		Mempool:          pool,
+		distributeConfig: distributeConfig,
 	}
 }
