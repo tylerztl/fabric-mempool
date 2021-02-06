@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/tylerztl/fabric-mempool/conf"
 	"net"
 	"os"
+	"sync"
 
 	pb "github.com/hyperledger/fabric/protos/common"
 	"github.com/spf13/cobra"
@@ -34,6 +36,7 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "server port")
+	serverCmd.Flags().StringVarP(&RestPort, "rest", "r", ":80", "rest server port")
 	serverCmd.Flags().IntVarP(&distributeConfig.DistributionType, "distribute", "d", 0, "distribution type")
 	rootCmd.AddCommand(serverCmd)
 }
@@ -47,6 +50,7 @@ func main() {
 var (
 	ServerPort string
 	EndPoint   string
+	RestPort   string
 )
 
 func Run() error {
@@ -56,19 +60,36 @@ func Run() error {
 		logger.Error("TCP Listen err:%s", err)
 	}
 
-	srv := newGrpc()
+	rpcHandler := handler.NewHandler(&distributeConfig)
+	restHandler := handler.NewRestHandler(&distributeConfig, rpcHandler)
+	r := gin.Default()
+	restHandler.Register(r)
+	srv := newGrpc(rpcHandler)
 	logger.Info("Fabric mempool service running", "listenPort", ServerPort)
 
-	if err = srv.Serve(conn); err != nil {
-		logger.Error("ListenAndServe: %s", err)
-	}
+	wg := new(sync.WaitGroup)
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		if err = srv.Serve(conn); err != nil {
+			logger.Error("ListenAndServe: %s", err)
+		}
+	}()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		if err = r.Run(RestPort); err != nil {
+			logger.Error("Rest Server: %s", err)
+		}
+	}()
+	wg.Wait()
 	return err
 }
 
-func newGrpc() *grpc.Server {
+func newGrpc(rpcHandler *handler.Handler) *grpc.Server {
 	server := grpc.NewServer()
 	// TODO
-	pb.RegisterMempoolServer(server, handler.NewHandler(&distributeConfig))
+	pb.RegisterMempoolServer(server, rpcHandler)
 
 	return server
 }

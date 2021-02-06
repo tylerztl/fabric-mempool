@@ -55,6 +55,13 @@ func (h *Handler) GetOrdererLog(name string) (string, error) {
 	return orderer.LogOut(), nil
 }
 
+// ChangeDistribute change distribution type
+func (h *Handler) ChangeDistribute(config *conf.DistributeConfig) {
+	h.distributeConfig.DistributionType = config.DistributionType
+	logger.Info("orderer change distribution type ", "old ====> ", h.distributeConfig.String(),
+		" new =====> ", config.String())
+}
+
 func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest) (*pb.FetchTxsResponse, error) {
 	if h.Mempool.Size() <= 0 {
 		return &pb.FetchTxsResponse{TxNum: 0, IsEmpty: true}, nil
