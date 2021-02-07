@@ -1,0 +1,27 @@
+version: '2'
+
+networks:
+  mempool:
+    external:
+      name: net_byfn
+
+services:
+  fabric-mempool:
+    image: hyperledger/fabric-mempool
+    build:
+      context: .
+    restart: always
+    environment:
+      - MEMPOOL_CONF=/go/src/fabric-mempool/conf
+      - CRYPTO_CONFIG=/go/src/fabric-mempool/crypto-config
+      - MEMPOOL_DATA=/go/src/fabric-mempool/data
+    container_name: fabric-mempool
+    command: /fabric-mempool start
+    ports:
+      - 8080:8080
+    volumes:
+      - ./network/crypto-config:/go/src/fabric-mempool/crypto-config
+      - ./conf/app.yaml:/go/src/fabric-mempool/conf/app.yaml
+#      - ./data:/go/src/fabric-mempool/data
+    networks:
+      - mempool

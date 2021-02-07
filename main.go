@@ -68,15 +68,14 @@ func Run() error {
 	logger.Info("Fabric mempool service running", "listenPort", ServerPort)
 
 	wg := new(sync.WaitGroup)
+	wg.Add(2)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		if err = srv.Serve(conn); err != nil {
 			logger.Error("ListenAndServe: %s", err)
 		}
 	}()
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		if err = r.Run(RestPort); err != nil {
 			logger.Error("Rest Server: %s", err)

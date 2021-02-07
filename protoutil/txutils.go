@@ -506,30 +506,30 @@ func GetOrComputeTxIDFromEnvelope(txEnvelopBytes []byte) (string, error) {
 	return txid, nil
 }
 
-func GetTxFeeFromEnvelope(txEnvelopBytes []byte) (*big.Int, error) {
+func GetTxFeeFromEnvelope(txEnvelopBytes []byte) (*big.Int, string, error) {
 	txEnvelope, err := UnmarshalEnvelope(txEnvelopBytes)
 	if err != nil {
-		return nil, errors.WithMessage(err, "error getting txID from envelope")
+		return nil, "", errors.WithMessage(err, "error getting txID from envelope")
 	}
 
 	txPayload, err := UnmarshalPayload(txEnvelope.Payload)
 	if err != nil {
-		return nil, errors.WithMessage(err, "error getting txID from payload")
+		return nil, "", errors.WithMessage(err, "error getting txID from payload")
 	}
 
 	if txPayload.Header == nil {
-		return nil, errors.New("error getting txID from header: payload header is nil")
+		return nil, "", errors.New("error getting txID from header: payload header is nil")
 	}
 
 	chdr, err := UnmarshalChannelHeader(txPayload.Header.ChannelHeader)
 	if err != nil {
-		return nil, errors.WithMessage(err, "error getting txID from channel header")
+		return nil, "", errors.WithMessage(err, "error getting txID from channel header")
 	}
 
 	feeLimit, ok := new(big.Int).SetString(string(chdr.FeeLimit), 10)
 	if !ok {
-		return nil, errors.New("invalid tx fee")
+		return nil, "", errors.New("invalid tx fee")
 	}
 
-	return feeLimit, nil
+	return feeLimit, chdr.TxId, nil
 }

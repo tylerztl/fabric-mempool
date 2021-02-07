@@ -19,8 +19,8 @@ func TestFetchTxs(t *testing.T) {
 
 	c := pb.NewMempoolClient(conn)
 	r, err := c.FetchTransactions(context.Background(), &pb.FetchTxsRequest{
-		Sender: "orderer",
-		TxNum:  10,
+		Requester: "orderer",
+		BlockHeight:  10,
 	})
 	if err != nil {
 		t.Error(err)

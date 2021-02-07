@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -33,8 +34,12 @@ type OrdererInfo struct {
 var appConfig = new(AppConf)
 
 func init() {
-	confPath := path.Join(goPath(), "src", Project, "conf", "app.yaml")
-	yamlFile, err := ioutil.ReadFile(confPath)
+	confPath := os.Getenv("MEMPOOL_CONF")
+	if confPath == "" {
+		confPath = path.Join(goPath(), "src", Project, "conf")
+	}
+
+	yamlFile, err := ioutil.ReadFile(path.Join(confPath, "app.yaml"))
 	if err != nil {
 		panic(fmt.Errorf("yamlFile.Get err[%s]", err))
 	}
@@ -57,5 +62,9 @@ func goPath() string {
 }
 
 func GetCryptoConfigPath(filename string) string {
-	return path.Join(goPath(), "src", Project, "crypto-config", filename)
+	cfg := os.Getenv("CRYPTO_CONFIG")
+	if cfg == "" {
+		cfg = path.Join(goPath(), "src", Project, "crypto-config")
+	}
+	return path.Join(cfg, filename)
 }

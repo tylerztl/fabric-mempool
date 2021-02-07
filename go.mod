@@ -27,4 +27,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-replace github.com/hyperledger/fabric v1.4.10-0.20201209223044-51a3a52260f6 => github.com/tylerztl/fabric-cityu v1.4.11-0.20210203170922-3fcce2c71f37
+replace github.com/hyperledger/fabric v1.4.10-0.20201209223044-51a3a52260f6 => github.com/tylerztl/fabric-cityu v1.4.11-0.20210207154207-b0ee9aed5b10
