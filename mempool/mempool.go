@@ -29,6 +29,8 @@ type Mempool interface {
 	// transactions (~ all available transactions).
 	ReapMaxTxs(max int) types.Txs
 
+	ReapMaxTxsBySort(max int) types.Txs
+
 	// Lock locks the mempool. The consensus must be able to hold lock to safely update.
 	Lock()
 

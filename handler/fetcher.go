@@ -21,10 +21,11 @@ import (
 )
 
 var (
-	MaxGrpcMsgSize = 1000 * 1024 * 1024
-	ConnTimeout    = 30 * time.Second
-	AppConf        = conf.GetAppConf().Conf
-	logger         = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "fetcher")
+	MaxGrpcMsgSize         = 1000 * 1024 * 1024
+	ConnTimeout            = 30 * time.Second
+	DefaultOrdererCapacity = 10
+	AppConf                = conf.GetAppConf().Conf
+	logger                 = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "fetcher")
 )
 
 type TxsFetcher struct {
@@ -114,6 +115,7 @@ func getOrderers(config *conf.DistributeConfig) map[string]*BroadcastClient {
 			config:     config,
 			totalTax:   big.NewInt(0),
 			orderCount: big.NewInt(0),
+			capacity:   DefaultOrdererCapacity,
 		}
 	}
 
@@ -130,6 +132,7 @@ type BroadcastClient struct {
 	orderCount *big.Int
 	joinTime   int64
 	config     *conf.DistributeConfig
+	capacity   int
 }
 
 // AddTax used to add order tax to orderer

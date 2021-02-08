@@ -13,3 +13,12 @@ func (d *DistributeConfig) String() string {
 		return "average"
 	}
 }
+
+type SortConfig struct {
+	SortSwitch bool `json:"sort_switch"`
+}
+
+type OrdererCapacityConfig struct {
+	Orderer  string `json:"orderer"`
+	Capacity int    `json:"capacity"`
+}

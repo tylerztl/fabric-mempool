@@ -1,7 +1,7 @@
 ---
 
 application:
-  local: false
+  local: true
   cpus: 2
   orderers:
     - name: orderer

@@ -19,6 +19,7 @@ import (
 type Handler struct {
 	fetcher          *TxsFetcher
 	distributeConfig *conf.DistributeConfig
+	sortConfig       *conf.SortConfig
 	mempool.Mempool
 }
 
@@ -62,25 +63,46 @@ func (h *Handler) ChangeDistribute(config *conf.DistributeConfig) {
 		" new =====> ", config.String())
 }
 
+func (h *Handler) ChangeSortSwitch(config *conf.SortConfig) {
+	h.sortConfig.SortSwitch = config.SortSwitch
+	logger.Info("change mempool tx sort switch", "old  ====> ", h.sortConfig.SortSwitch,
+		" new =====> ", config.SortSwitch)
+}
+
+func (h *Handler) ChangeOrdererCapacity(config *conf.OrdererCapacityConfig) error {
+	orderer := h.fetcher.GetOrderer(config.Orderer)
+	if orderer == nil {
+		logger.Error("Not found orderer", "name", config.Orderer)
+		return errors.New("not found orderer")
+	}
+
+	orderer.capacity = config.Capacity
+	logger.Info("change orderer capacity", "ordererName", config.Orderer, "new capacity", config.Capacity)
+	return nil
+}
+
 func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest) (*pb.FetchTxsResponse, error) {
 	if h.Mempool.Size() <= 0 {
 		return &pb.FetchTxsResponse{TxNum: 0, IsEmpty: true}, nil
 	}
 
-	// TODO 分配orderer交易数量
-	expectedTxs := 10
-
-	txs := h.Mempool.ReapMaxTxs(expectedTxs - 1)
-	actualTxs := len(txs)
-	isEmpty := actualTxs < expectedTxs
-
-	logger.Info("orderer fetch transactions", "OrdererName", ftx.Requester,
-		"actualTxs", actualTxs, "expectedTxs", expectedTxs, "mempool", h.Mempool.Size())
-
 	orderer := h.fetcher.GetOrderer(ftx.Requester)
 	if orderer == nil {
 		return nil, errors.New("not found orderer connected client")
 	}
+	expectedTxs := orderer.capacity
+
+	var txs types.Txs
+	if h.sortConfig.SortSwitch {
+		txs = h.Mempool.ReapMaxTxsBySort(expectedTxs)
+	} else {
+		txs = h.Mempool.ReapMaxTxs(expectedTxs - 1)
+	}
+	actualTxs := len(txs)
+	isEmpty := actualTxs < expectedTxs
+
+	logger.Info("Fetched unconfirmed transactions for orderer", "OrdererName", ftx.Requester,
+		"actualTxs", actualTxs, "capacity", expectedTxs, "mempool", h.Mempool.Size())
 
 	for i, tx := range txs {
 		fee, txId, err := protoutil.GetTxFeeFromEnvelope(tx)
@@ -89,36 +111,36 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 			continue
 		}
 		h.distribute(fee, orderer)
-		logger.Info("orderer fetch txs", "total", len(txs), "index", i, "txId", txId, "fee", fee)
+		logger.Info("Fetched tx detail", "index", i, "txId", txId, "fee", fee)
 	}
 
-	go func() {
-		committedTxs := make(types.Txs, 0)
-		for _, tx := range txs {
-			err := orderer.broadcast(tx)
-			if err != nil {
-				logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
-				if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
-					logger.Error("retry broadcast endorsed tx to orderer service", "ordererName", ftx.Requester)
-					continue
-				}
-			}
+	//go func() {
+	//	committedTxs := make(types.Txs, 0)
+	//	for _, tx := range txs {
+	//		err := orderer.broadcast(tx)
+	//		if err != nil {
+	//			logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
+	//			if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
+	//				logger.Error("retry broadcast endorsed tx to orderer service", "ordererName", ftx.Requester)
+	//				continue
+	//			}
+	//		}
+	//
+	//		committedTxs = append(committedTxs, tx)
+	//	}
+	//	if err := h.Mempool.Update(int64(ftx.BlockHeight), committedTxs, nil, nil, nil); err != nil {
+	//		logger.Error("txs committed update failed", "error", err)
+	//	}
+	//}()
 
-			committedTxs = append(committedTxs, tx)
-		}
-		if err := h.Mempool.Update(int64(ftx.BlockHeight), committedTxs, nil, nil, nil); err != nil {
-			logger.Error("txs committed update failed", "error", err)
-		}
-	}()
-
-	//if err := h.Mempool.Update(1, txs, nil, nil, nil); err != nil {
-	//	logger.Error("txs committed update failed", "error", err)
-	//}
+	if err := h.Mempool.Update(1, txs, nil, nil, nil); err != nil {
+		logger.Error("txs committed update failed", "error", err)
+	}
 
 	return &pb.FetchTxsResponse{TxNum: int32(actualTxs), IsEmpty: isEmpty}, nil
 }
 
-func NewHandler(distributeConfig *conf.DistributeConfig) *Handler {
+func NewHandler(distributeConfig *conf.DistributeConfig, sortConfig *conf.SortConfig) *Handler {
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir := os.Getenv("MEMPOOL_DATA")
 	var err error
@@ -135,7 +157,7 @@ func NewHandler(distributeConfig *conf.DistributeConfig) *Handler {
 	cfg := config.DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	cfg.RootDir = rootDir
-	cfg.Size = 10000
+	cfg.Size = 10000000
 
 	pool := mempool.NewCListMempool(cfg, 0)
 	pool.SetLogger(logger)
@@ -144,5 +166,6 @@ func NewHandler(distributeConfig *conf.DistributeConfig) *Handler {
 		fetcher:          NewTxsFetcher(distributeConfig),
 		Mempool:          pool,
 		distributeConfig: distributeConfig,
+		sortConfig:       sortConfig,
 	}
 }

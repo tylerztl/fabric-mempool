@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/tylerztl/fabric-mempool/conf"
 	"net"
 	"os"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	pb "github.com/hyperledger/fabric/protos/common"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
+	"github.com/tylerztl/fabric-mempool/conf"
 	"github.com/tylerztl/fabric-mempool/handler"
 	"google.golang.org/grpc"
 )
@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 }
 
 var distributeConfig = conf.DistributeConfig{}
+var sortConfig = conf.SortConfig{}
 
 var serverCmd = &cobra.Command{
 	Use:   "start",
@@ -38,6 +39,7 @@ func init() {
 	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "server port")
 	serverCmd.Flags().StringVarP(&RestPort, "rest", "r", ":80", "rest server port")
 	serverCmd.Flags().IntVarP(&distributeConfig.DistributionType, "distribute", "d", 0, "distribution type")
+	serverCmd.Flags().BoolVarP(&sortConfig.SortSwitch, "sort", "s", true, "mempool sort switch")
 	rootCmd.AddCommand(serverCmd)
 }
 
@@ -60,7 +62,7 @@ func Run() error {
 		logger.Error("TCP Listen err:%s", err)
 	}
 
-	rpcHandler := handler.NewHandler(&distributeConfig)
+	rpcHandler := handler.NewHandler(&distributeConfig, &sortConfig)
 	restHandler := handler.NewRestHandler(&distributeConfig, rpcHandler)
 	r := gin.Default()
 	restHandler.Register(r)

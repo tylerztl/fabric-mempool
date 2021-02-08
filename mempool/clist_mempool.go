@@ -4,6 +4,9 @@ import (
 	"container/list"
 	"crypto/sha256"
 	"fmt"
+	"github.com/tylerztl/fabric-mempool/protoutil"
+	"math/big"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -67,6 +70,49 @@ type CListMempool struct {
 	logger log.Logger
 
 	metrics *Metrics
+}
+
+// A data structure to hold a key/value pair.
+type Pair struct {
+	Key   [TxKeySize]byte
+	Value *mempoolTx
+}
+
+// A slice of Pairs that implements sort.Interface to sort by Value.
+type PairList []Pair
+
+func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p PairList) Len() int           { return len(p) }
+func (p PairList) Less(i, j int) bool { return p[i].Value.gasWanted > p[j].Value.gasWanted }
+
+func sortMapByValue(m *sync.Map, size int) PairList {
+	p := make(PairList, size)
+	i := 0
+	walk := func(key, value interface{}) bool {
+		bk := key.([TxKeySize]byte)
+		bv := value.(*clist.CElement)
+		p[i] = Pair{bk, bv.Value.(*mempoolTx)}
+		i++
+		return true
+	}
+	m.Range(walk)
+	sort.Sort(p)
+	return p
+}
+
+func (mem *CListMempool) ReapMaxTxsBySort(max int) types.Txs {
+	if max < 0 {
+		max = mem.txs.Len()
+	}
+	num := tmmath.MinInt(mem.txs.Len(), max)
+	txs := make([]types.Tx, 0, num)
+	lists := sortMapByValue(&mem.txsMap, mem.txs.Len())
+	for i := 0; i < num; i++ {
+		tx := lists[i]
+		txs = append(txs, tx.Value.tx)
+
+	}
+	return txs
 }
 
 var _ Mempool = &CListMempool{}
@@ -367,17 +413,26 @@ func (mem *CListMempool) resCbFirstTime(
 		return
 	}
 
+	fee, txId, err := protoutil.GetTxFeeFromEnvelope(tx)
+	if err != nil {
+		fmt.Printf("Unmarshal unconfirmed transaction failed: %s", err)
+		fee = new(big.Int).SetInt64(0)
+	}
+	if txId == "" {
+		txId = txID(tx)
+	}
+
 	memTx := &mempoolTx{
-		height: mem.height,
-		//gasWanted: r.CheckTx.GasWanted,
-		tx: tx,
+		height:    mem.height,
+		gasWanted: fee.Int64(),
+		tx:        tx,
 	}
 	memTx.senders.Store(peerID, true)
 	mem.addTx(memTx)
-	mem.logger.Info("Added good transaction",
-		"tx", txID(tx),
-		"height", memTx.height,
-		"total", mem.Size(),
+	mem.logger.Info("Added unconfirmed transaction to mempool",
+		"txId", txId,
+		"fee", fee,
+		"poolSize", mem.Size(),
 	)
 	mem.notifyTxsAvailable()
 }

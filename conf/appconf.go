@@ -64,7 +64,7 @@ func goPath() string {
 func GetCryptoConfigPath(filename string) string {
 	cfg := os.Getenv("CRYPTO_CONFIG")
 	if cfg == "" {
-		cfg = path.Join(goPath(), "src", Project, "crypto-config")
+		cfg = path.Join(goPath(), "src", Project, "network", "crypto-config")
 	}
 	return path.Join(cfg, filename)
 }

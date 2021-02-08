@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"sync"
 	"testing"
@@ -17,6 +18,10 @@ import (
 )
 
 var producersWG sync.WaitGroup
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func sendTransaction(payload []byte) (cb.StatusCode, error) {
 	conn := NewConn()
@@ -71,7 +76,7 @@ func createSignedTx(payload []byte) *cb.Envelope {
 		ChannelId: "mychannel",
 		Epoch:     1,
 		Extension: ccHeaderExtensionBytes,
-		FeeLimit:  []byte("10"),
+		FeeLimit:  []byte(strconv.Itoa(rand.Intn(100000))),
 	})
 	shdrBytes, _ := proto.Marshal(&cb.SignatureHeader{
 		Creator: signerBytes,
