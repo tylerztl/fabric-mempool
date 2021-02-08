@@ -1,7 +1,7 @@
 ---
 
 application:
-  local: true
+  local: false
   cpus: 2
   orderers:
     - name: orderer
@@ -9,3 +9,10 @@ application:
       port: 7050
   tlsEnabled: true
   reqTimeout: 120
+  peer:
+    addr: peer0.org1.example.com:7051
+    tls_ca_cert: /go/src/fabric-mempool/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+  user:
+    mspid: Org1MSP
+    private_key: /go/src/fabric-mempool/crypto-config/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/priv_sk
+    sign_cert: /go/src/fabric-mempool/crypto-config/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem

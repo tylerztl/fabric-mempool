@@ -19,6 +19,7 @@ services:
     command: /fabric-mempool start
     ports:
       - 8080:8080
+      - 80:80
     volumes:
       - ./network/crypto-config:/go/src/fabric-mempool/crypto-config
       - ./conf/app.yaml:/go/src/fabric-mempool/conf/app.yaml

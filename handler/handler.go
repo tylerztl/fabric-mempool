@@ -2,13 +2,17 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"os"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/common"
+	pbpeer "github.com/hyperledger/fabric/protos/peer"
+	putils "github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tylerztl/fabric-mempool/conf"
@@ -21,6 +25,8 @@ type Handler struct {
 	distributeConfig *conf.DistributeConfig
 	sortConfig       *conf.SortConfig
 	mempool.Mempool
+	endorser pbpeer.EndorserClient
+	signer   *Crypto
 }
 
 func (h *Handler) SubmitTransaction(ctx context.Context, etx *pb.EndorsedTransaction) (*pb.SubmitTxResponse, error) {
@@ -81,6 +87,56 @@ func (h *Handler) ChangeOrdererCapacity(config *conf.OrdererCapacityConfig) erro
 	return nil
 }
 
+func (h *Handler) Invoke(channelID, ccID, feeLimit string, args ...string) error {
+	var argsInByte [][]byte
+	for _, arg := range args {
+		argsInByte = append(argsInByte, []byte(arg))
+	}
+
+	creator, _ := h.signer.Serialize()
+	spec := &pbpeer.ChaincodeSpec{
+		Type:        pbpeer.ChaincodeSpec_GOLANG,
+		ChaincodeId: &pbpeer.ChaincodeID{Name: ccID},
+		Input: &pbpeer.ChaincodeInput{
+			Args: argsInByte,
+		},
+	}
+	invocation := &pbpeer.ChaincodeInvocationSpec{ChaincodeSpec: spec}
+	prop, _, err := putils.CreateChaincodeProposalWithTxIDAndTransient(pb.HeaderType_ENDORSER_TRANSACTION, channelID, feeLimit, invocation, creator, "", nil)
+	if err != nil {
+		return errors.WithMessage(err, "error creating proposal")
+	}
+
+	signedProp, err := GetSignedProposal(prop, h.signer)
+	if err != nil {
+		return errors.WithMessage(err, "error creating signed proposal")
+	}
+
+	proposalResp, err := h.endorser.ProcessProposal(context.Background(), signedProp)
+	if err != nil {
+		return err
+	}
+
+	if proposalResp.Response.Status >= shim.ERRORTHRESHOLD {
+		return errors.WithMessage(err, fmt.Sprintf("error proposal responses received, %s", proposalResp.Response.Message))
+	}
+
+	// assemble a signed transaction (it's an Envelope message)
+	env, err := CreateSignedTx(prop, h.signer, proposalResp)
+	if err != nil {
+		return errors.WithMessage(err, "could not assemble transaction")
+	}
+	envBytes, err := proto.Marshal(env)
+	if err != nil {
+		return err
+	}
+	if err := h.Mempool.CheckTx(envBytes, nil, mempool.TxInfo{}); err != nil {
+		logger.Error("failed to add transaction", "error", err)
+	}
+
+	return nil
+}
+
 func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest) (*pb.FetchTxsResponse, error) {
 	if h.Mempool.Size() <= 0 {
 		return &pb.FetchTxsResponse{TxNum: 0, IsEmpty: true}, nil
@@ -102,7 +158,7 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 	isEmpty := actualTxs < expectedTxs
 
 	logger.Info("Fetched unconfirmed transactions for orderer", "OrdererName", ftx.Requester,
-		"actualTxs", actualTxs, "capacity", expectedTxs, "mempool", h.Mempool.Size())
+		"actualTxs", actualTxs, "capacity", expectedTxs, "mempool", h.Mempool.Size(), "blockHeight", ftx.BlockHeight)
 
 	for i, tx := range txs {
 		fee, txId, err := protoutil.GetTxFeeFromEnvelope(tx)
@@ -114,36 +170,43 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		logger.Info("Fetched tx detail", "index", i, "txId", txId, "fee", fee)
 	}
 
-	//go func() {
-	//	committedTxs := make(types.Txs, 0)
-	//	for _, tx := range txs {
-	//		err := orderer.broadcast(tx)
-	//		if err != nil {
-	//			logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
-	//			if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
-	//				logger.Error("retry broadcast endorsed tx to orderer service", "ordererName", ftx.Requester)
-	//				continue
-	//			}
-	//		}
-	//
-	//		committedTxs = append(committedTxs, tx)
-	//	}
-	//	if err := h.Mempool.Update(int64(ftx.BlockHeight), committedTxs, nil, nil, nil); err != nil {
-	//		logger.Error("txs committed update failed", "error", err)
-	//	}
-	//}()
+	go func() {
+		committedTxs := make(types.Txs, 0)
+		for _, tx := range txs {
+			err := orderer.broadcast(tx)
+			if err != nil {
+				logger.Error("failed to broadcast endorsed tx to orderer service", "error", err)
+				if err = orderer.resetConnect(); err == nil && orderer.broadcast(tx) != nil {
+					logger.Error("retry broadcast endorsed tx to orderer service", "ordererName", ftx.Requester)
+				}
+			}
 
-	if err := h.Mempool.Update(1, txs, nil, nil, nil); err != nil {
-		logger.Error("txs committed update failed", "error", err)
-	}
+			committedTxs = append(committedTxs, tx)
+		}
+		if err := h.Mempool.Update(int64(ftx.BlockHeight), committedTxs, nil, nil, nil); err != nil {
+			logger.Error("txs committed update failed", "error", err)
+		}
+	}()
+
+	//if err := h.Mempool.Update(1, txs, nil, nil, nil); err != nil {
+	//	logger.Error("txs committed update failed", "error", err)
+	//}
 
 	return &pb.FetchTxsResponse{TxNum: int32(actualTxs), IsEmpty: isEmpty}, nil
 }
 
 func NewHandler(distributeConfig *conf.DistributeConfig, sortConfig *conf.SortConfig) *Handler {
+	endorser, err := CreateEndorserClient(AppConf.Peer)
+	if err != nil {
+		panic(err)
+	}
+	signer, err := LoadCrypto(AppConf.User)
+	if err != nil {
+		panic(err)
+	}
+
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir := os.Getenv("MEMPOOL_DATA")
-	var err error
 	if rootDir == "" {
 		rootDir, err = ioutil.TempDir("", "fabric-mempool_")
 		if err != nil {
@@ -167,5 +230,7 @@ func NewHandler(distributeConfig *conf.DistributeConfig, sortConfig *conf.SortCo
 		Mempool:          pool,
 		distributeConfig: distributeConfig,
 		sortConfig:       sortConfig,
+		endorser:         endorser,
+		signer:           signer,
 	}
 }

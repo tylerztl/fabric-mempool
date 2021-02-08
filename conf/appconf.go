@@ -23,6 +23,19 @@ type Application struct {
 	Orderers   []*OrdererInfo `yaml:"orderers"`
 	TlsEnabled bool           `yaml:"tlsEnabled"`
 	ReqTimeout int64          `yaml:"reqTimeout"`
+	Peer       *PeerInfo      `yaml:"peer"`
+	User       *UserInfo      `yaml:"user"`
+}
+
+type PeerInfo struct {
+	Addr      string `yaml:"addr"`
+	TLSCACert string `yaml:"tls_ca_cert"`
+}
+
+type UserInfo struct {
+	MSPID      string `yaml:"mspid"`
+	PrivateKey string `yaml:"private_key"`
+	SignCert   string `yaml:"sign_cert"`
 }
 
 type OrdererInfo struct {

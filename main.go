@@ -60,6 +60,7 @@ func Run() error {
 	conn, err := net.Listen("tcp", EndPoint)
 	if err != nil {
 		logger.Error("TCP Listen err:%s", err)
+		return err
 	}
 
 	rpcHandler := handler.NewHandler(&distributeConfig, &sortConfig)
