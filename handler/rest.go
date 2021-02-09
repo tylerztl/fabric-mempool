@@ -73,9 +73,20 @@ func (h *RestHandler) getOrdererLog(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"msg": "operator success", "data": log})
 }
 
+func (h *RestHandler) getOrdererInfoList(ctx *gin.Context) {
+	data := h.handler.GetOrdererInfoList()
+	ctx.JSON(http.StatusOK, gin.H{"msg": "operator success", "data": data})
+}
+
 func (h *RestHandler) invoke(ctx *gin.Context) {
+	config := conf.TransactionFee{}
+	if err := ctx.ShouldBindJSON(config); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "params not valid"})
+		return
+	}
+
 	args := []string{"invoke", "a", "b", "1"}
-	err := h.handler.Invoke("mychannel", "mycc", strconv.Itoa(rand.Intn(10000)), args...)
+	err := h.handler.Invoke("mychannel", "mycc", strconv.Itoa(config.Fee), args...)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
@@ -85,9 +96,10 @@ func (h *RestHandler) invoke(ctx *gin.Context) {
 
 // Register register route info to gin
 func (h *RestHandler) Register(r *gin.Engine) {
-	r.POST("/distribute", h.changeDistribute)
+	r.POST("/allocation", h.changeDistribute)
 	r.POST("/sort", h.changeSortSwitch)
 	r.POST("/capacity", h.changeOrdererCapacity)
-	r.GET("/orderer/:sender", h.getOrdererLog)
-	r.GET("/invoke", h.invoke)
+	//r.GET("/orderer/:sender", h.getOrdererLog)
+	r.GET("/orderers", h.getOrdererInfoList)
+	r.POST("/invoke", h.invoke)
 }

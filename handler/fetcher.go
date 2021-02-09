@@ -128,6 +128,7 @@ type BroadcastClient struct {
 	dialOpts   []grpc.DialOption
 	client     ab.AtomicBroadcast_BroadcastClient
 	mutex      sync.Mutex
+
 	totalTax   *big.Int
 	orderCount *big.Int
 	joinTime   int64
@@ -153,13 +154,13 @@ func (b *BroadcastClient) dealOrder() {
 // log write logs to log file or std
 func (b *BroadcastClient) log() {
 	name, orderCount, totalTax, rule, speed := b.calcInfo()
-	logger.Info("order info", "orderer", name, "order count", orderCount, "tax", totalTax, "distribution rule", rule, "speed", speed)
+	logger.Info("Logging system", "orderer-name", name, "txs-fetched", orderCount, "fee-reward", totalTax, "allocation-rule", rule, "tps", speed)
 }
 
 // LogOut return log string to server
 func (b *BroadcastClient) LogOut() string {
 	name, orderCount, totalTax, rule, speed := b.calcInfo()
-	return fmt.Sprintf("[orderer info] orderer %s, order count: %s, tax: %s, distribution rule: %s , speed: %s", name, orderCount, totalTax, rule, speed)
+	return fmt.Sprintf("[Logging system] orderer-name: %s, txs-fetched: %s, fee-reward: %s, allocation-rule: %s , tps: %s", name, orderCount, totalTax, rule, speed)
 }
 
 func (b *BroadcastClient) calcInfo() (string, string, string, string, string) {

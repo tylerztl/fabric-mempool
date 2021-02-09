@@ -62,17 +62,29 @@ func (h *Handler) GetOrdererLog(name string) (string, error) {
 	return orderer.LogOut(), nil
 }
 
+func (h *Handler) GetOrdererInfoList() conf.OrdererFeedback {
+	list := make([]*conf.Feedback, 0)
+	for k, v := range h.fetcher.clients {
+		list = append(list, &conf.Feedback{
+			Orderer:   k,
+			Capacity:  v.capacity,
+			FeeReward: v.totalTax.String(),
+		})
+	}
+	return conf.OrdererFeedback{
+		Lists: list,
+	}
+}
+
 // ChangeDistribute change distribution type
 func (h *Handler) ChangeDistribute(config *conf.DistributeConfig) {
 	h.distributeConfig.DistributionType = config.DistributionType
-	logger.Info("orderer change distribution type ", "old ====> ", h.distributeConfig.String(),
-		" new =====> ", config.String())
+	logger.Info("change transaction allocation rule", "allocation-rule", config.String())
 }
 
 func (h *Handler) ChangeSortSwitch(config *conf.SortConfig) {
 	h.sortConfig.SortSwitch = config.SortSwitch
-	logger.Info("change mempool tx sort switch", "old  ====> ", h.sortConfig.SortSwitch,
-		" new =====> ", config.SortSwitch)
+	logger.Info("change transaction sorting switch", " sorting-rule", config.String())
 }
 
 func (h *Handler) ChangeOrdererCapacity(config *conf.OrdererCapacityConfig) error {
@@ -169,6 +181,7 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		h.distribute(fee, orderer)
 		logger.Info("Fetched tx detail", "index", i, "txId", txId, "fee", fee)
 	}
+	orderer.log()
 
 	go func() {
 		committedTxs := make(types.Txs, 0)
