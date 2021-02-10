@@ -28,34 +28,34 @@ func NewRestHandler(config *conf.DistributeConfig, handler *Handler) *RestHandle
 
 // changeDistribute change distribution type
 func (h *RestHandler) changeDistribute(ctx *gin.Context) {
-	config := conf.DistributeConfig{}
+	config := &conf.DistributeConfig{}
 	if err := ctx.ShouldBindJSON(config); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "params not valid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
 	}
-	h.handler.ChangeDistribute(&config)
+	h.handler.ChangeDistribute(config)
 	ctx.JSON(http.StatusOK, gin.H{})
 }
 
 // changeSortSwitch open/close mempool tx sort by fee.
 func (h *RestHandler) changeSortSwitch(ctx *gin.Context) {
-	config := conf.SortConfig{}
+	config := &conf.SortConfig{}
 	if err := ctx.ShouldBindJSON(config); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "params not valid"})
 		return
 	}
-	h.handler.ChangeSortSwitch(&config)
+	h.handler.ChangeSortSwitch(config)
 	ctx.JSON(http.StatusOK, gin.H{})
 }
 
 // changeSortSwitch open/close mempool tx sort by fee.
 func (h *RestHandler) changeOrdererCapacity(ctx *gin.Context) {
-	config := conf.OrdererCapacityConfig{}
+	config := &conf.OrdererCapacityConfig{}
 	if err := ctx.ShouldBindJSON(config); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "params not valid"})
 		return
 	}
-	if err := h.handler.ChangeOrdererCapacity(&config); err != nil {
+	if err := h.handler.ChangeOrdererCapacity(config); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
 	}
@@ -79,7 +79,7 @@ func (h *RestHandler) getOrdererInfoList(ctx *gin.Context) {
 }
 
 func (h *RestHandler) invoke(ctx *gin.Context) {
-	config := conf.TransactionFee{}
+	config := &conf.TransactionFee{}
 	if err := ctx.ShouldBindJSON(config); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "params not valid"})
 		return

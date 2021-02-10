@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -114,7 +115,7 @@ func getOrderers(config *conf.DistributeConfig) map[string]*BroadcastClient {
 			joinTime:   time.Now().Unix(),
 			config:     config,
 			totalTax:   big.NewInt(0),
-			orderCount: big.NewInt(0),
+			orderCount: big.NewInt(int64(len(AppConf.Orderers))),
 			capacity:   DefaultOrdererCapacity,
 		}
 	}
@@ -131,6 +132,7 @@ type BroadcastClient struct {
 
 	totalTax   *big.Int
 	orderCount *big.Int
+	fetchedTxs int64
 	joinTime   int64
 	config     *conf.DistributeConfig
 	capacity   int
@@ -146,9 +148,8 @@ func (b *BroadcastClient) GetTax() string {
 	return b.totalTax.String()
 }
 
-// dealOrder if orderer deal one order, update count
-func (b *BroadcastClient) dealOrder() {
-	b.orderCount.Add(b.orderCount, big.NewInt(1))
+func (b *BroadcastClient) AddTx(tx int64) {
+	b.fetchedTxs += tx
 }
 
 // log write logs to log file or std
@@ -166,7 +167,7 @@ func (b *BroadcastClient) LogOut() string {
 func (b *BroadcastClient) calcInfo() (string, string, string, string, string) {
 	liveTime := time.Now().Unix() - b.joinTime
 	speed := new(big.Int).Div(b.orderCount, big.NewInt(liveTime)).String()
-	return b.name, b.orderCount.String(), b.totalTax.String(), b.config.String(), speed
+	return b.name, strconv.FormatInt(b.fetchedTxs, 10), b.totalTax.String(), b.config.String(), speed
 }
 
 func (b *BroadcastClient) resetConnect() error {
@@ -205,7 +206,6 @@ func (b *BroadcastClient) broadcast(transaction []byte) error {
 	if err := b.client.Send(env); err != nil {
 		return errors.WithMessage(err, "could not send")
 	}
-	b.dealOrder()
 	return <-done
 }
 

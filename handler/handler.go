@@ -181,6 +181,7 @@ func (h *Handler) FetchTransactions(ctx context.Context, ftx *pb.FetchTxsRequest
 		h.distribute(fee, orderer)
 		logger.Info("Fetched tx detail", "index", i, "txId", txId, "fee", fee)
 	}
+	orderer.AddTx(int64(actualTxs))
 	orderer.log()
 
 	go func() {
