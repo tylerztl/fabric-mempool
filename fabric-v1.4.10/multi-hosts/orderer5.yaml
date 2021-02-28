@@ -1,0 +1,24 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '2'
+
+services:
+  orderer5.example.com:
+    hostname: orderer5.example.com
+    network_mode: "host"
+    extends:
+      file: ../base/peer-base.yaml
+      service: orderer-base
+    environment:
+      - ORDERER_GENERAL_MEMPOOL_ORDERERIDENTITY=orderer5
+    container_name: orderer5.example.com
+    volumes:
+      - ../config/channel-artifacts/${GENESIS_BLOCK}:/var/hyperledger/orderer/orderer.genesis.block
+      - ../config/crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/msp:/var/hyperledger/orderer/msp
+      - ../config/crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/tls/:/var/hyperledger/orderer/tls
+      - ${MOUNT_PATH}/orderer5.example.com:/var/hyperledger/production
+    ports:
+      - 8050:7050

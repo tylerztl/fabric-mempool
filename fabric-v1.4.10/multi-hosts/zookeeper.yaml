@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  zookeeper.example.com:
+    restart: always
+    network_mode: "host"
+    hostname: 'zookeeper.example.com'
+    extends:
+      file: ../base/docker-compose-base.yaml
+      service: zookeeper
+    container_name: zookeeper.example.com
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=0.0.0.0:2888:3888
+    volumes:
+      - ${MOUNT_PATH}/zookeeper.example.com/datalog:/datalog
+      - ${MOUNT_PATH}/zookeeper.example.com/data:/data

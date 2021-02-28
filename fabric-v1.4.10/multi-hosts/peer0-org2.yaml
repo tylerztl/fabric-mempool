@@ -11,5 +11,5 @@ services:
     network_mode: "host"
     container_name: peer0.org2.example.com
     extends:
-      file: ../../base/docker-compose-base.yaml
+      file: ../base/docker-compose-base.yaml
       service: peer0.org2.example.com
