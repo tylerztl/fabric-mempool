@@ -7,7 +7,7 @@ version: '2'
 
 services:
   peer-base:
-    image: hyperledger/fabric-peer:1.4.10
+    image: hyperledger/fabric-peer
     environment:
       - GODEBUG=netdns=go
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
@@ -27,7 +27,7 @@ services:
     command: peer node start
 
   orderer-base:
-    image: hyperledger/fabric-orderer:1.4.10
+    image: hyperledger/fabric-orderer
     environment:
       - GODEBUG=netdns=go
       - ORDERER_GENERAL_PROFILE_ENABLED=false
