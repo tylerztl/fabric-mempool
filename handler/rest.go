@@ -1,6 +1,7 @@
 package handler
 
 import (
+	keyrand "crypto/rand"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tylerztl/fabric-mempool/conf"
+	"github.com/vsergeev/btckeygenie/btckey"
 )
 
 func init() {
@@ -85,7 +87,11 @@ func (h *RestHandler) invoke(ctx *gin.Context) {
 		return
 	}
 
-	args := []string{"invoke", "a", "b", "1"}
+	/* Generate a new Bitcoin keypair */
+	privFrom, _ := btckey.GenerateKey(keyrand.Reader)
+	privTo, _ := btckey.GenerateKey(keyrand.Reader)
+
+	args := []string{"invoke", privFrom.ToAddress(), privTo.ToAddress(), strconv.Itoa(rand.Int()), strconv.Itoa(config.Fee)}
 	err := h.handler.Invoke("mychannel", "mycc", strconv.Itoa(config.Fee), args...)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
