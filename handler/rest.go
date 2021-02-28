@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tylerztl/fabric-mempool/conf"
-	"github.com/vsergeev/btckeygenie/btckey"
+	"github.com/tylerztl/fabric-mempool/protoutil/btckey"
 )
 
 func init() {
