@@ -41,7 +41,12 @@ func init() {
 	serverCmd.Flags().StringVarP(&RestPort, "rest", "r", ":80", "rest server port")
 	serverCmd.Flags().IntVarP(&distributeConfig.DistributionType, "distribute", "d", 0, "distribution type")
 	serverCmd.Flags().BoolVarP(&sortConfig.SortSwitch, "sort", "s", true, "mempool sort switch")
+
+	importCmd.Flags().StringVarP(&FilePath, "filepath", "f", "", "数据文件所在路径")
+	importCmd.Flags().IntVarP(&BatchNum, "batch", "b", 100, "每次上传的数据量（条/次）")
+	importCmd.Flags().Int64VarP(&Interval, "interval", "i", 0, "请求时间间隔（纳秒）")
 	rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(importCmd)
 }
 
 func main() {
@@ -54,6 +59,10 @@ var (
 	ServerPort string
 	EndPoint   string
 	RestPort   string
+
+	FilePath string
+	BatchNum int
+	Interval int64
 )
 
 func Cors() gin.HandlerFunc {
