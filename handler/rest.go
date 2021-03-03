@@ -12,8 +12,15 @@ import (
 	"github.com/tylerztl/fabric-mempool/protoutil/btckey"
 )
 
+var privFrom btckey.PrivateKey
+var privTo btckey.PrivateKey
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	/* Generate a new Bitcoin keypair */
+	privFrom, _ = btckey.GenerateKey(keyrand.Reader)
+	privTo, _ = btckey.GenerateKey(keyrand.Reader)
 }
 
 type RestHandler struct {
@@ -87,16 +94,13 @@ func (h *RestHandler) invoke(ctx *gin.Context) {
 		return
 	}
 
-	/* Generate a new Bitcoin keypair */
-	privFrom, _ := btckey.GenerateKey(keyrand.Reader)
-	privTo, _ := btckey.GenerateKey(keyrand.Reader)
-
-	args := []string{"invoke", privFrom.ToAddress(), privTo.ToAddress(), strconv.Itoa(rand.Int()), strconv.Itoa(config.Fee)}
-	err := h.handler.Invoke("mychannel", "mycc", strconv.Itoa(config.Fee), args...)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
-		return
-	}
+	go func() {
+		args := []string{"invoke", privFrom.ToAddress(), privTo.ToAddress(), strconv.Itoa(rand.Int()), strconv.Itoa(config.Fee)}
+		err := h.handler.Invoke("mychannel", "mycc", strconv.Itoa(config.Fee), args...)
+		if err != nil {
+			logger.Error("invoke request failed", "error", err)
+		}
+	}()
 	ctx.JSON(http.StatusOK, gin.H{"msg": "invoke success"})
 }
 
