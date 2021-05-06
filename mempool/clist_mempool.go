@@ -101,6 +101,9 @@ func sortMapByValue(m *sync.Map, size int) PairList {
 }
 
 func (mem *CListMempool) ReapMaxTxsBySort(max int) types.Txs {
+	mem.updateMtx.RLock()
+	defer mem.updateMtx.RUnlock()
+	
 	if max < 0 {
 		max = mem.txs.Len()
 	}
